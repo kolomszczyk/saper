@@ -28,6 +28,7 @@ let started = false;
 let gameOver = false;
 let elapsed = 0;
 let timerId = null;
+let chordPreviewCells = [];
 
 function format3(n) {
   return String(n).padStart(3, "0").slice(-3);
@@ -207,8 +208,15 @@ function renderBoard() {
       cellBtn.dataset.col = String(c);
 
       cellBtn.addEventListener("click", () => onLeftClick(r, c));
+      cellBtn.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        showChordPreview(r, c);
+      });
+      cellBtn.addEventListener("mouseup", clearChordPreview);
+      cellBtn.addEventListener("mouseleave", clearChordPreview);
       cellBtn.addEventListener("contextmenu", (e) => {
         e.preventDefault();
+        clearChordPreview();
         onRightClick(r, c);
       });
 
@@ -281,6 +289,31 @@ function chordOpenCell(r, c) {
   }
 
   checkWin();
+}
+
+function clearChordPreview() {
+  for (const cell of chordPreviewCells) {
+    cell.el.classList.remove("chord-preview");
+  }
+  chordPreviewCells = [];
+}
+
+function showChordPreview(r, c) {
+  clearChordPreview();
+
+  if (gameOver) return;
+  const cell = grid[r][c];
+  if (!cell.open) return;
+
+  const flaggedAround = countFlaggedNeighbors(r, c);
+  if (flaggedAround === cell.adjacent) return;
+
+  for (const [nr, nc] of neighbors(r, c)) {
+    const neighbor = grid[nr][nc];
+    if (neighbor.open || neighbor.flagged) continue;
+    neighbor.el.classList.add("chord-preview");
+    chordPreviewCells.push(neighbor);
+  }
 }
 
 function checkWin() {
@@ -454,6 +487,7 @@ function restoreGameState() {
 
 function onLeftClick(r, c) {
   if (gameOver) return;
+  clearChordPreview();
   const cell = grid[r][c];
   if (cell.open) {
     chordOpenCell(r, c);
@@ -512,6 +546,7 @@ function newGame() {
   started = false;
   gameOver = false;
   elapsed = 0;
+  clearChordPreview();
   stopTimer();
 
   setMessage("Powodzenia!");
@@ -522,6 +557,7 @@ function newGame() {
   saveGameState();
 }
 
+window.addEventListener("mouseup", clearChordPreview);
 newGameEl.addEventListener("click", newGame);
 difficultyEl.addEventListener("change", newGame);
 
