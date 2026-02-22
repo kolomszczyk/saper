@@ -190,20 +190,83 @@
         z-index: 1;
       }
 
+      .made-board-overlay.is-text-outline {
+        font-family: "Digital-7", "DS-Digital", "Seven Segment", "Orbitron", "Courier New", monospace;
+        font-weight: 900;
+        letter-spacing: 1px;
+        white-space: nowrap;
+        color: var(--digit-red);
+        text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+      }
+
+      :root[data-theme="light"] .made-board-overlay.is-text-outline {
+        color: var(--digit-red);
+        text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+      }
+
+      :root[data-theme="dark"] .made-board-overlay.is-text-outline {
+        color: var(--digit-red);
+        text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+      }
+
       .made-board-overlay.is-logo {
         justify-content: center;
         padding: 0;
+      }
+
+      .made-board-overlay.is-logo.is-clickable a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        cursor: pointer;
+        pointer-events: auto;
+        transition:
+          transform 120ms ease,
+          background-color 120ms ease,
+          box-shadow 120ms ease;
+      }
+
+      .made-board-overlay.is-logo.is-clickable a:hover {
+        transform: scale(1.06);
+        background: rgba(255, 71, 71, 0.08);
+        box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.35), 0 0 10px rgba(255, 35, 35, 0.22);
+      }
+
+      .made-board-overlay.is-logo.is-clickable a:focus-visible {
+        outline: 2px solid var(--picker-focus);
+        outline-offset: 2px;
+        background: rgba(255, 71, 71, 0.08);
+        box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.35), 0 0 10px rgba(255, 35, 35, 0.22);
       }
 
       .made-board-overlay.is-logo svg {
         width: 34px;
         height: 34px;
         display: block;
-        fill: #ffffff;
+        fill: #000000;
+        filter:
+          drop-shadow(1px 0 0 var(--digit-red))
+          drop-shadow(-1px 0 0 var(--digit-red))
+          drop-shadow(0 1px 0 var(--digit-red))
+          drop-shadow(0 -1px 0 var(--digit-red));
+      }
+
+      .made-board-overlay.is-logo.is-repo-logo svg {
+        width: 60px;
+        height: 60px;
+        filter: none;
       }
 
       :root[data-theme="light"] .made-board-overlay.is-logo svg {
-        fill: #111111;
+        fill: #000000;
+        filter:
+          drop-shadow(1px 0 0 var(--digit-red))
+          drop-shadow(-1px 0 0 var(--digit-red))
+          drop-shadow(0 1px 0 var(--digit-red))
+          drop-shadow(0 -1px 0 var(--digit-red));
       }
 
       .made-board-overlay.is-link {
@@ -487,12 +550,13 @@
         {
           c: 7,
           r: 4,
-          w: 4,
+          w: 5,
           h: 1,
           text: "build by",
           centerText: true,
+          outlinedText: true,
           openAtStart: false,
-          reserveRuns: [{ c: 7, r: 4, w: 4, h: 1 }],
+          reserveRuns: [{ c: 7, r: 4, w: 5, h: 1 }],
         },
         {
           c: 9,
@@ -501,18 +565,20 @@
           h: 1,
           text: "kolomszczyk",
           centerText: true,
+          outlinedText: true,
           openAtStart: false,
           reserveRuns: [{ c: 9, r: 5, w: 6, h: 1 }],
         },
         {
-          c: 10,
+          c: 8,
           r: 9,
-          w: 6,
+          w: 9,
           h: 1,
           text: "with Codex AI",
           centerText: true,
+          outlinedText: true,
           openAtStart: false,
-          reserveRuns: [{ c: 10, r: 9, w: 6, h: 1 }],
+          reserveRuns: [{ c: 8, r: 9, w: 9, h: 1 }],
         },
         {
           c: 11,
@@ -520,10 +586,12 @@
           w: 2,
           h: 2,
           reserveOnly: true,
+          logoType: "github-square",
+          href: "https://github.com/kolomszczyk",
           openAtStart: false,
           logoCopies: [
-            { c: 9, r: 11, w: 2, h: 2 },
-            { c: 13, r: 11, w: 2, h: 2 },
+            { c: 9, r: 11, w: 2, h: 2, logoType: "repo", href: "https://github.com/kolomszczyk/saper" },
+            { c: 13, r: 11, w: 2, h: 2, logoType: "avatar-square", href: "https://kolomszczyk.github.io/" },
           ],
         },
       ];
@@ -955,7 +1023,7 @@
             const parts = zone.parts ?? [{ c: zone.c, r: zone.r, w: zone.w, h: zone.h, text: zone.text }];
             for (const part of parts) {
               const overlay = document.createElement("div");
-              overlay.className = `made-board-overlay${zone.isLink ? " is-link" : ""}`;
+              overlay.className = `made-board-overlay${zone.isLink ? " is-link" : ""}${zone.outlinedText ? " is-text-outline" : ""}`;
               overlay.style.gridColumn = `${part.c} / span ${part.w}`;
               overlay.style.gridRow = `${part.r} / span ${part.h}`;
               if (zone.centerText) {
@@ -979,25 +1047,64 @@
             }
           } else {
             const overlay = document.createElement("div");
-            overlay.className = "made-board-overlay is-logo";
+            const mainLogoType = zone.logoType ?? "github";
+            overlay.className = `made-board-overlay is-logo${mainLogoType !== "github" ? " is-repo-logo" : ""}`;
             overlay.style.gridColumn = `${zone.c} / span ${zone.w}`;
             overlay.style.gridRow = `${zone.r} / span ${zone.h}`;
-            overlay.setAttribute("aria-hidden", "true");
-            overlay.innerHTML =
-              '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.35c-2.24.49-2.71-.95-2.71-.95-.36-.93-.9-1.17-.9-1.17-.73-.5.06-.49.06-.49.8.06 1.22.82 1.22.82.72 1.2 1.87.86 2.33.66.07-.5.28-.85.5-1.05-1.78-.2-3.64-.88-3.64-3.9 0-.86.31-1.56.82-2.11-.08-.2-.35-1.02.08-2.12 0 0 .67-.21 2.2.8A7.7 7.7 0 0 1 8 4.07c.68 0 1.37.09 2.01.27 1.53-1.01 2.2-.8 2.2-.8.43 1.1.16 1.92.08 2.12.51.55.82 1.25.82 2.11 0 3.03-1.87 3.7-3.65 3.9.29.24.54.73.54 1.48v2.2c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg>';
+            if (zone.href) {
+              overlay.classList.add("is-clickable");
+              const link = document.createElement("a");
+              link.href = zone.href;
+              link.target = "_blank";
+              link.rel = "noreferrer noopener";
+              link.setAttribute("aria-label", "Open GitHub profile");
+              link.innerHTML = getMadeLogoSvg(mainLogoType);
+              overlay.append(link);
+            } else {
+              overlay.setAttribute("aria-hidden", "true");
+              overlay.innerHTML = getMadeLogoSvg(mainLogoType);
+            }
             madeBoardOverlays.append(overlay);
 
             for (const copy of zone.logoCopies ?? []) {
               const copyOverlay = document.createElement("div");
-              copyOverlay.className = "made-board-overlay is-logo";
+              const copyLogoType = copy.logoType ?? "github";
+              copyOverlay.className = `made-board-overlay is-logo${copyLogoType !== "github" ? " is-repo-logo" : ""}`;
               copyOverlay.style.gridColumn = `${copy.c} / span ${copy.w}`;
               copyOverlay.style.gridRow = `${copy.r} / span ${copy.h}`;
-              copyOverlay.setAttribute("aria-hidden", "true");
-              copyOverlay.innerHTML = overlay.innerHTML;
+              if (copy.href) {
+                copyOverlay.classList.add("is-clickable");
+                const link = document.createElement("a");
+                link.href = copy.href;
+                link.target = "_blank";
+                link.rel = "noreferrer noopener";
+                link.setAttribute("aria-label", "Open repository");
+                link.innerHTML = getMadeLogoSvg(copyLogoType);
+                copyOverlay.append(link);
+              } else {
+                copyOverlay.setAttribute("aria-hidden", "true");
+                copyOverlay.innerHTML = getMadeLogoSvg(copyLogoType);
+              }
               madeBoardOverlays.append(copyOverlay);
             }
           }
         }
+      }
+
+      function getMadeLogoSvg(type) {
+        if (type === "repo") {
+          return '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="5" width="54" height="54" rx="10" ry="10" fill="#000000" stroke="#000000" stroke-width="2"/><rect x="8" y="8" width="48" height="48" rx="8" ry="8" fill="none" stroke="var(--digit-red)" stroke-width="1.8"/><g fill="none" stroke="var(--digit-red)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M27 22v20"/><path d="M27 33c8 0 13-2 13-8"/><path d="M27 33c10 0 14 4 17 12"/></g><circle cx="27" cy="22" r="3.2" fill="#000000" stroke="var(--digit-red)" stroke-width="2"/><circle cx="40" cy="25" r="3.2" fill="#000000" stroke="var(--digit-red)" stroke-width="2"/><circle cx="27" cy="42" r="3.2" fill="#000000" stroke="var(--digit-red)" stroke-width="2"/><circle cx="44" cy="45" r="3.2" fill="#000000" stroke="var(--digit-red)" stroke-width="2"/></svg>';
+        }
+
+        if (type === "github-square") {
+          return '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="5" width="54" height="54" rx="10" ry="10" fill="#000000" stroke="#000000" stroke-width="2"/><rect x="8" y="8" width="48" height="48" rx="8" ry="8" fill="none" stroke="var(--digit-red)" stroke-width="1.8"/><path fill="var(--digit-red)" d="M32 17.5c-8.01 0-14.5 6.49-14.5 14.5 0 6.41 4.16 11.85 9.93 13.76.79.15 1.08-.34 1.08-.76v-2.68c-4.04.88-4.89-1.71-4.89-1.71-.66-1.67-1.61-2.11-1.61-2.11-1.31-.9.1-.88.1-.88 1.45.1 2.21 1.49 2.21 1.49 1.29 2.2 3.39 1.56 4.21 1.19.13-.9.5-1.52.91-1.87-3.23-.37-6.62-1.62-6.62-7.18 0-1.58.57-2.88 1.49-3.89-.15-.37-.64-1.89.14-3.93 0 0 1.22-.39 4 .15a13.9 13.9 0 0 1 7.29 0c2.77-.54 3.99-.15 3.99-.15.79 2.04.3 3.56.15 3.93.93 1.01 1.49 2.31 1.49 3.89 0 5.58-3.4 6.81-6.64 7.17.52.45.99 1.33.99 2.68v3.97c0 .42.29.92 1.09.76A14.51 14.51 0 0 0 46.5 32c0-8.01-6.49-14.5-14.5-14.5Z"/></svg>';
+        }
+
+        if (type === "avatar-square") {
+          return '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="5" y="5" width="54" height="54" rx="10" ry="10" fill="#000000" stroke="#000000" stroke-width="2"/><rect x="8" y="8" width="48" height="48" rx="8" ry="8" fill="none" stroke="var(--digit-red)" stroke-width="1.8"/><circle cx="32" cy="28" r="8" fill="none" stroke="var(--digit-red)" stroke-width="3"/><path d="M20 47c2.8-6 8.1-9 12-9s9.2 3 12 9" fill="none" stroke="var(--digit-red)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+
+        return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.35c-2.24.49-2.71-.95-2.71-.95-.36-.93-.9-1.17-.9-1.17-.73-.5.06-.49.06-.49.8.06 1.22.82 1.22.82.72 1.2 1.87.86 2.33.66.07-.5.28-.85.5-1.05-1.78-.2-3.64-.88-3.64-3.9 0-.86.31-1.56.82-2.11-.08-.2-.35-1.02.08-2.12 0 0 .67-.21 2.2.8A7.7 7.7 0 0 1 8 4.07c.68 0 1.37.09 2.01.27 1.53-1.01 2.2-.8 2.2-.8.43 1.1.16 1.92.08 2.12.51.55.82 1.25.82 2.11 0 3.03-1.87 3.7-3.65 3.9.29.24.54.73.54 1.48v2.2c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg>';
       }
 
       function revealZeros(startCell) {
