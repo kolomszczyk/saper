@@ -305,6 +305,11 @@
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
+  visibility: hidden;
+}
+
+.made-settings-switch.is-ready {
+  visibility: visible;
 }
 
 .made-settings-switch input {
@@ -350,6 +355,9 @@
   border-left: 2px solid var(--light);
   border-right: 2px solid var(--dark);
   border-bottom: 2px solid var(--dark);
+}
+
+.made-settings-switch.is-ready .made-settings-switch-thumb {
   transition: transform 120ms ease;
 }
 
@@ -379,6 +387,20 @@
 
 .made-settings-save {
   min-width: 118px;
+}
+
+.made-settings-save.is-save-pressed {
+  transform: translateY(1px);
+  border-color: var(--picker-border-pressed);
+  box-shadow: var(--picker-active-shadow);
+  filter: none;
+  pointer-events: none;
+}
+
+.made-settings-save.is-save-pressed:hover,
+.made-settings-save.is-save-pressed:focus-visible {
+  filter: none;
+  outline: none;
 }
 
 .made-board-zoom {

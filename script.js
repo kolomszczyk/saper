@@ -20,6 +20,7 @@ const boardZoomEl = document.querySelector(".board-zoom");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
+const difficultyPickerEl = document.querySelector(".difficulty-picker");
 const difficultyButtons = Array.from(document.querySelectorAll(".difficulty-button"));
 const themeEl = document.getElementById("theme");
 const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
@@ -294,10 +295,14 @@ function loadSettings() {
 
 function syncCustomDifficultyAvailability() {
   const customBtn = difficultyButtons.find((btn) => btn.dataset.difficulty === CUSTOM_DIFFICULTY_KEY);
-  if (!customBtn) return;
+  if (!customBtn) {
+    difficultyPickerEl?.classList.add("is-ready");
+    return;
+  }
   if (customBoardConfig) {
     customBtn.disabled = true;
     customBtn.setAttribute("aria-disabled", "true");
+    difficultyPickerEl?.classList.add("is-ready");
     return;
   }
 
@@ -311,6 +316,8 @@ function syncCustomDifficultyAvailability() {
     difficultyEl.value = "medium";
     syncDifficultyButtons();
   }
+
+  difficultyPickerEl?.classList.add("is-ready");
 }
 
 function setFace(state) {

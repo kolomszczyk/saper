@@ -267,6 +267,11 @@ body {
 
 .difficulty-picker {
   margin-top: 26px;
+  visibility: hidden;
+}
+
+.difficulty-picker.is-ready {
+  visibility: visible;
 }
 
 .theme-picker {

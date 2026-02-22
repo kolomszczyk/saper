@@ -2,6 +2,7 @@
   const DIGITS = 4;
   const MIN_VALUE = 0;
   const MAX_VALUE = 500;
+  const SAVE_PRESSED_MS = 3000;
   const SETTINGS_COOKIE = "saper_settings";
   const SETTINGS_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
   const selector = "#map-width, #map-height, #games-per-day, #bomb-count";
@@ -12,6 +13,7 @@
   const bombCountInput = document.getElementById("bomb-count");
   const gamesPerDayInput = document.getElementById("games-per-day");
   const saveButton = document.querySelector(".made-settings-save");
+  const customMapSwitch = customMapToggle?.closest(".made-settings-switch");
   const leftColumn = document.querySelector(".made-settings-left-col");
   const bombCountField = document.querySelector(".made-settings-bombs-field");
   const dailyGameLimit = window.sharedDailyGameLimit;
@@ -142,10 +144,13 @@
   if (customMapToggle) {
     customMapToggle.addEventListener("change", syncCustomMapState);
     syncCustomMapState();
+    customMapSwitch?.classList.add("is-ready");
   }
 
   if (saveButton && gamesPerDayInput && dailyGameLimit?.setGamesPerDay) {
-    saveButton.addEventListener("click", () => {
+    let savePressedTimerId = null;
+
+    const runSave = () => {
       const settings = readSettings();
       settings.customMapEnabled = Boolean(customMapToggle?.checked);
       if (mapWidthInput) settings.customMapWidth = Number.parseInt(mapWidthInput.value, 10) || 0;
@@ -159,6 +164,20 @@
       window.dispatchEvent(new CustomEvent("saper:daily-limit-settings-saved", {
         detail: { gamesPerDay: savedLimit },
       }));
+    };
+
+    saveButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      runSave();
+
+      saveButton.classList.add("is-save-pressed");
+      if (savePressedTimerId) {
+        clearTimeout(savePressedTimerId);
+      }
+      savePressedTimerId = setTimeout(() => {
+        saveButton.classList.remove("is-save-pressed");
+        savePressedTimerId = null;
+      }, SAVE_PRESSED_MS);
     });
   }
 })();
