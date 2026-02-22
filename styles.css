@@ -7,6 +7,7 @@
   --digit-bg: #111;
   --digit-red: #ff2a2a;
   --flag-url: url("./flag.svg");
+  --bomb-url: url("./bomb.svg");
 }
 
 * {
@@ -156,9 +157,9 @@ select {
   user-select: none;
 }
 
-.cell:focus {
-  outline: 1px dotted #000;
-  outline-offset: -3px;
+.cell:focus,
+.cell:focus-visible {
+  outline: none;
 }
 
 .cell.open {
@@ -169,7 +170,11 @@ select {
 
 .cell.mine {
   background: #df6767;
-  color: #000;
+  color: transparent;
+  background-image: var(--bomb-url);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
 }
 
 .cell.flagged {

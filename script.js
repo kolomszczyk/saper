@@ -16,6 +16,7 @@ const difficultyEl = document.getElementById("difficulty");
 const newGameEl = document.getElementById("new-game");
 const CELL_SIZE = 24;
 document.documentElement.style.setProperty("--flag-url", `url(\"./flag.svg?v=${Date.now()}\")`);
+document.documentElement.style.setProperty("--bomb-url", `url(\"./bomb.svg?v=${Date.now()}\")`);
 
 let grid = [];
 let rows = 0;
@@ -176,7 +177,6 @@ function applyCellVisual(cell) {
     cell.el.classList.add("open");
     if (cell.mine) {
       cell.el.classList.add("mine");
-      cell.el.textContent = "*";
       return;
     }
     if (cell.adjacent > 0) {
