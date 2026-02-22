@@ -1,233 +1,599 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>made</title>
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-dark.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" />
+    <link rel="stylesheet" href="styles.css" />
     <style>
-      :root {
-        --ui-font: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Geneva, sans-serif;
-        --bg: #0d131f;
-        --bg-soft: #121b2d;
-        --card: rgba(255, 255, 255, 0.06);
-        --text: #eef3ff;
-        --muted: #a8b2c7;
-        --border: rgba(255, 255, 255, 0.12);
-        --accent: #7ee0c6;
-        --accent-2: #8fb3ff;
-        --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-        --picker-border-raised: #6a7483 #181c23 #181c23 #6a7483;
-        --picker-border-pressed: #181c23 #6a7483 #6a7483 #181c23;
-        --picker-bg: radial-gradient(circle at 30% 28%, #444d5b 0%, #2e3540 45%, #21262e 100%);
-        --picker-text: #eef2f6;
-        --picker-active-text: #f7fbff;
-        --picker-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 3px 10px rgba(0, 0, 0, 0.3);
-        --picker-active-shadow:
-          inset 0 2px 4px rgba(0, 0, 0, 0.45),
-          inset 0 -1px 0 rgba(255, 255, 255, 0.12);
-        --picker-focus: #dfe9ff;
-      }
-
-      :root[data-theme="light"] {
-        --bg: #edf2ff;
-        --bg-soft: #dfe8ff;
-        --card: rgba(255, 255, 255, 0.75);
-        --text: #101a2b;
-        --muted: #5f6f89;
-        --border: rgba(16, 26, 43, 0.12);
-        --accent: #167f6b;
-        --accent-2: #355fcf;
-        --shadow: 0 20px 50px rgba(59, 82, 143, 0.18);
-        --picker-border-raised: #ffffff #7b7b7b #7b7b7b #ffffff;
-        --picker-border-pressed: #7b7b7b #ffffff #ffffff #7b7b7b;
-        --picker-bg: linear-gradient(#efefef, #d8d8d8);
-        --picker-text: #111111;
-        --picker-active-text: #111111;
-        --picker-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 0 rgba(0, 0, 0, 0.08);
-        --picker-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        --picker-focus: #2a62ff;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: ui-rounded, "Trebuchet MS", "Segoe UI", sans-serif;
-        color: var(--text);
-        background:
-          radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--accent-2) 28%, transparent), transparent 45%),
-          radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 48%),
-          linear-gradient(160deg, var(--bg), var(--bg-soft));
-        display: grid;
-        place-items: center;
-        padding: 24px;
-      }
-
-      .page {
+      .made-page {
         width: min(760px, 100%);
+        align-items: stretch;
       }
 
-      .hero {
-        border: 1px solid var(--border);
-        background: var(--card);
-        backdrop-filter: blur(10px);
-        border-radius: 24px;
-        box-shadow: var(--shadow);
-        padding: clamp(24px, 4vw, 42px);
-      }
-
-      .eyebrow {
-        margin: 0;
-        color: var(--muted);
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        font-size: 12px;
-      }
-
-      h1 {
-        margin: 12px 0 10px;
-        font-size: clamp(2rem, 7vw, 4.2rem);
-        line-height: 0.95;
-      }
-
-      .grad {
-        color: transparent;
-        background: linear-gradient(120deg, var(--accent), var(--accent-2));
-        background-clip: text;
-      }
-
-      .desc {
-        margin: 0;
-        max-width: 42ch;
-        color: var(--muted);
-        line-height: 1.55;
-      }
-
-      .credit {
-        margin-top: 28px;
-      }
-
-      .credit a {
-        color: var(--text);
-        text-decoration: none;
-        border-bottom: 1px solid color-mix(in srgb, var(--text) 35%, transparent);
-        padding-bottom: 2px;
-      }
-
-      .credit a:hover,
-      .credit a:focus-visible {
-        color: var(--accent);
-        border-color: var(--accent);
-        outline: none;
-      }
-
-      .theme-dock {
-        position: fixed;
-        left: 50%;
-        bottom: 18px;
-        transform: translateX(-50%);
+      .top-actions {
         display: flex;
         justify-content: center;
-        gap: 12px;
+        margin-bottom: 12px;
       }
 
-      .theme-button {
-        width: 96px;
-        height: 44px;
-        border-radius: 0;
-        border: 3px solid;
-        border-color: var(--picker-border-raised);
-        background: var(--picker-bg);
-        color: var(--picker-text);
+      .back-button {
+        min-width: 164px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .made-window {
+        width: 100%;
+        margin-left: 0;
         font-family: var(--ui-font);
-        font-size: 14px;
-        font-weight: 700;
+      }
+
+      .made-title-wrap {
+        display: block;
+        width: fit-content;
+        margin: 0 auto 10px;
+        padding: 8px;
+        background: var(--mid);
+        border-top: 3px solid var(--dark);
+        border-left: 3px solid var(--dark);
+        border-right: 3px solid var(--light);
+        border-bottom: 3px solid var(--light);
+      }
+
+      .made-title-display {
+        width: fit-content;
+        min-width: 0;
+        padding-inline: 10px;
         cursor: pointer;
-        user-select: none;
-        box-shadow: var(--picker-shadow);
-        transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
       }
 
-      .theme-button:hover {
-        filter: brightness(1.08);
+      .made-title-display span {
+        letter-spacing: 3px;
       }
 
-      .theme-button:active {
-        transform: translateY(1px);
-        border-color: var(--picker-border-pressed);
+      .made-title-display:active {
+        border-top-color: var(--digits-frame);
+        border-left-color: var(--digits-frame);
+        border-right-color: var(--deep);
+        border-bottom-color: var(--deep);
       }
 
-      .theme-button.is-active {
-        background: var(--picker-bg);
-        border-color: var(--picker-border-pressed);
-        color: var(--picker-active-text);
-        box-shadow: var(--picker-active-shadow);
-        transform: translateY(1px);
-      }
-
-      .theme-button:focus-visible {
+      .made-title-display:focus-visible {
         outline: 2px solid var(--picker-focus);
         outline-offset: 3px;
       }
 
+      .made-board-shell {
+        padding: 6px;
+        width: fit-content;
+        margin: 0 auto;
+      }
+
+      .made-board {
+        grid-template-columns: repeat(21, 24px);
+        grid-auto-rows: 24px;
+        position: relative;
+      }
+
+      .made-board .cell {
+        cursor: pointer;
+      }
+
+      .made-board .cell.open {
+        font-size: 16px;
+        cursor: default;
+      }
+
+      .made-board .cell.debug-mine {
+        position: relative;
+      }
+
+      .made-board .cell.debug-mine::after {
+        content: "";
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff3b3b;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 8px rgba(255, 59, 59, 0.5);
+        inset: 0;
+        margin: auto;
+        pointer-events: none;
+      }
+
+      .made-board-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: stretch;
+        align-self: center;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        padding: 0;
+        font-family: var(--ui-font);
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--body-text);
+        line-height: 1;
+        text-align: center;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      .made-board-overlay.is-logo {
+        justify-content: center;
+        padding: 0;
+      }
+
+      .made-board-overlay.is-logo svg {
+        width: 34px;
+        height: 34px;
+        display: block;
+        fill: #ffffff;
+      }
+
+      .made-board-overlay.is-link {
+        color: var(--picker-focus);
+      }
+
+      .made-board-overlay.is-link a {
+        color: inherit;
+        text-decoration: none;
+        pointer-events: auto;
+      }
+
+      .made-board-overlay.is-link a:hover,
+      .made-board-overlay.is-link a:focus-visible {
+        text-decoration: underline;
+      }
+
+      .made-theme-picker {
+        margin-top: 18px;
+      }
+
+      .made-undo-wrap {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+      }
+
+      .made-undo {
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1;
+      }
+
+      .made-undo:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
       @media (max-width: 560px) {
-        body {
-          padding: 16px;
-          align-items: start;
+        .made-board-shell {
+          overflow: auto;
         }
 
-        .hero {
-          border-radius: 18px;
-          padding: 20px;
-          margin-top: 10vh;
-        }
-
-        .theme-dock {
-          width: calc(100% - 32px);
-          justify-content: center;
-          gap: 10px;
-        }
-
-        .theme-button {
-          width: min(96px, 44vw);
+        .made-board-overlay {
+          font-size: 16px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="page">
-      <main class="hero" aria-label="Strona tymczasowa">
-        <p class="eyebrow">W budowie</p>
-        <h1>
-          <span class="grad">made</span><br />
-          w przygotowaniu
-        </h1>
-        <p class="desc">
-          Nazwa jeszcze się tworzy. Na razie to tymczasowy ekran startowy, który można potem rozbudować.
-        </p>
-        <p class="credit">
-          <a href="index.html" aria-label="Powrót do strony Saper">made by moonboy</a>
-        </p>
-      </main>
-    </div>
+    <div class="page made-page">
+      <div class="top-actions">
+        <a class="theme-button back-button" href="index.html" aria-label="Back to game page">Back to Game</a>
+      </div>
 
-    <section class="theme-dock" aria-label="Wybór motywu">
-      <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
-        Dark
-      </button>
-      <button type="button" class="theme-button" data-theme="light" aria-pressed="false">
-        Light
-      </button>
-    </section>
+      <main class="window made-window" aria-label="Project information">
+        <div class="made-title-wrap">
+          <button type="button" id="made-reset" class="digits made-title-display" aria-label="Reset board">
+            <span>SAPER</span>
+          </button>
+        </div>
+
+        <section class="board-shell made-board-shell" aria-label="Project details board">
+          <div id="made-board" class="board made-board" role="grid" aria-label="Minesweeper-style project details"></div>
+        </section>
+
+        <div class="made-undo-wrap">
+          <button type="button" id="made-undo" class="cell made-undo" aria-label="Undo last move" disabled>↻</button>
+        </div>
+      </main>
+
+      <section class="theme-picker made-theme-picker" aria-label="Theme selection">
+        <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
+          Dark
+        </button>
+        <button type="button" class="theme-button" data-theme="light" aria-pressed="false">
+          Light
+        </button>
+      </section>
+    </div>
 
     <script>
       const root = document.documentElement;
-      const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
+      const themeButtons = Array.from(document.querySelectorAll(".theme-picker .theme-button"));
+      const madeBoard = document.getElementById("made-board");
+      const resetButton = document.getElementById("made-reset");
+      const undoButton = document.getElementById("made-undo");
       const savedTheme = localStorage.getItem("theme");
       const startTheme = savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+
+      const boardCols = 21;
+      const boardRows = 13;
+      const allCells = [];
+      const state = new Map();
+      const historyStack = [];
+      let revealAllMines = false;
+      let gameFinished = false;
+      const debugShowMines = true;
+      const startAsUnplayed = true;
+      const openReservedTextTilesAtStart = true;
+
+      const staticMinePositions = [
+        [2, 2], [4, 3], [6, 4],
+        [18, 5], [23, 5],
+        [20, 6],
+        [3, 7], [9, 7], [16, 7], [22, 7],
+        [6, 8], [13, 8], [19, 8], [24, 8],
+        [2, 9], [7, 9], [15, 9], [21, 9],
+        [4, 10], [10, 10], [17, 10], [23, 10],
+        [6, 11], [12, 11], [19, 11], [24, 11],
+        [3, 12], [9, 12], [16, 12], [22, 12],
+        [5, 13], [11, 13], [18, 13], [24, 13],
+        [8, 14], [20, 14],
+        [14, 15], [23, 15],
+      ];
+      let minePositions = staticMinePositions.map(([c, r]) => [c, r]);
+      const initialFlagPositions = [
+        [2, 8],
+        [22, 9],
+        [23, 10],
+        [19, 11],
+        [20, 12],
+        [22, 13],
+      ];
+
+      const textZones = [
+        {
+          c: 13,
+          r: 4,
+          w: 8,
+          h: 1,
+          text: "build by",
+          parts: [
+            { c: 13, r: 4, w: 5, h: 1, text: "build" },
+            { c: 19, r: 4, w: 2, h: 1, text: "by" },
+          ],
+          reserveRuns: [{ c: 13, r: 4, w: 5, h: 1 }, { c: 19, r: 4, w: 2, h: 1 }],
+        },
+        {
+          c: 9,
+          r: 5,
+          w: 11,
+          h: 1,
+          text: "kolomszczyk",
+          reserveRuns: [{ c: 9, r: 5, w: 11, h: 1 }],
+        },
+        {
+          c: 9,
+          r: 9,
+          w: 13,
+          h: 1,
+          text: "with Codex AI",
+          parts: [
+            { c: 9, r: 9, w: 4, h: 1, text: "with" },
+            { c: 14, r: 9, w: 5, h: 1, text: "Codex" },
+            { c: 20, r: 9, w: 2, h: 1, text: "AI" },
+          ],
+          reserveRuns: [{ c: 9, r: 9, w: 4, h: 1 }, { c: 14, r: 9, w: 5, h: 1 }, { c: 20, r: 9, w: 2, h: 1 }],
+        },
+        { c: 12, r: 12, w: 2, h: 2, reserveOnly: true },
+      ];
+
+      function loadOrCreateMineLayout() {
+        minePositions = staticMinePositions.map(([c, r]) => [c, r]);
+      }
+
+      function key(c, r) {
+        return `${c},${r}`;
+      }
+
+      function inBounds(c, r) {
+        return c >= 1 && c <= boardCols && r >= 1 && r <= boardRows;
+      }
+
+      function neighbors(c, r) {
+        const result = [];
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            if (dc === 0 && dr === 0) continue;
+            const nc = c + dc;
+            const nr = r + dr;
+            if (inBounds(nc, nr)) result.push([nc, nr]);
+          }
+        }
+        return result;
+      }
+
+      function buildState() {
+        state.clear();
+        revealAllMines = false;
+        gameFinished = false;
+        historyStack.length = 0;
+        loadOrCreateMineLayout();
+
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            state.set(key(c, r), {
+              c,
+              r,
+              mine: false,
+              count: 0,
+              open: false,
+              flagged: false,
+            });
+          }
+        }
+
+        for (const [c, r] of minePositions) {
+          const cell = state.get(key(c, r));
+          if (cell) cell.mine = true;
+        }
+
+        if (!startAsUnplayed) {
+          for (const [c, r] of initialFlagPositions) {
+            const cell = state.get(key(c, r));
+            if (cell && !cell.open) cell.flagged = true;
+          }
+        }
+
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            const cell = state.get(key(c, r));
+            if (!cell || cell.mine) continue;
+            let count = 0;
+            for (const [nc, nr] of neighbors(c, r)) {
+              if (state.get(key(nc, nr))?.mine) count += 1;
+            }
+            cell.count = count;
+          }
+        }
+
+        if (openReservedTextTilesAtStart) {
+          for (const zone of textZones) {
+            const runs = zone.reserveRuns ?? [{ c: zone.c, r: zone.r, w: zone.w, h: zone.h }];
+            for (const run of runs) {
+              for (let rr = run.r; rr < run.r + run.h; rr += 1) {
+                for (let cc = run.c; cc < run.c + run.w; cc += 1) {
+                  if (!inBounds(cc, rr)) continue;
+                  const cell = state.get(key(cc, rr));
+                  if (!cell) continue;
+                  cell.open = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      function snapshotState() {
+        return {
+          revealAllMines,
+          gameFinished,
+          cells: Array.from(state.values(), (cell) => ({
+            c: cell.c,
+            r: cell.r,
+            open: cell.open,
+            flagged: cell.flagged,
+          })),
+        };
+      }
+
+      function restoreSnapshot(snapshot) {
+        if (!snapshot) return;
+        revealAllMines = snapshot.revealAllMines;
+        gameFinished = snapshot.gameFinished;
+        for (const item of snapshot.cells) {
+          const cell = state.get(key(item.c, item.r));
+          if (!cell) continue;
+          cell.open = item.open;
+          cell.flagged = item.flagged;
+        }
+      }
+
+      function pushHistory() {
+        historyStack.push(snapshotState());
+        if (historyStack.length > 100) historyStack.shift();
+      }
+
+      function undoLastMove() {
+        const snapshot = historyStack.pop();
+        if (!snapshot) return;
+        restoreSnapshot(snapshot);
+        renderBoard();
+      }
+
+      function resetGame() {
+        buildState();
+        renderBoard();
+      }
+
+      function createBoardDom() {
+        if (!madeBoard) return;
+        madeBoard.innerHTML = "";
+        allCells.length = 0;
+
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            const el = document.createElement("button");
+            el.type = "button";
+            el.className = "cell";
+            el.dataset.c = String(c);
+            el.dataset.r = String(r);
+            el.setAttribute("role", "gridcell");
+            el.setAttribute("aria-label", `Cell ${c}, ${r}`);
+            madeBoard.append(el);
+            allCells.push(el);
+          }
+        }
+
+        for (const zone of textZones) {
+          if (!zone.reserveOnly) {
+            const parts = zone.parts ?? [{ c: zone.c, r: zone.r, w: zone.w, h: zone.h, text: zone.text }];
+            for (const part of parts) {
+              const overlay = document.createElement("div");
+              overlay.className = `made-board-overlay${zone.isLink ? " is-link" : ""}`;
+              overlay.style.gridColumn = `${part.c} / span ${part.w}`;
+              overlay.style.gridRow = `${part.r} / span ${part.h}`;
+
+              if (zone.isLink) {
+                const link = document.createElement("a");
+                link.href = "https://github.com/kolomszczyk/saper";
+                link.target = "_blank";
+                link.rel = "noreferrer noopener";
+                link.textContent = part.text;
+                overlay.append(link);
+              } else {
+                overlay.textContent = part.text;
+              }
+
+              madeBoard.append(overlay);
+            }
+          } else {
+            const overlay = document.createElement("div");
+            overlay.className = "made-board-overlay is-logo";
+            overlay.style.gridColumn = `${zone.c} / span ${zone.w}`;
+            overlay.style.gridRow = `${zone.r} / span ${zone.h}`;
+            overlay.setAttribute("aria-hidden", "true");
+            overlay.innerHTML =
+              '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.35c-2.24.49-2.71-.95-2.71-.95-.36-.93-.9-1.17-.9-1.17-.73-.5.06-.49.06-.49.8.06 1.22.82 1.22.82.72 1.2 1.87.86 2.33.66.07-.5.28-.85.5-1.05-1.78-.2-3.64-.88-3.64-3.9 0-.86.31-1.56.82-2.11-.08-.2-.35-1.02.08-2.12 0 0 .67-.21 2.2.8A7.7 7.7 0 0 1 8 4.07c.68 0 1.37.09 2.01.27 1.53-1.01 2.2-.8 2.2-.8.43 1.1.16 1.92.08 2.12.51.55.82 1.25.82 2.11 0 3.03-1.87 3.7-3.65 3.9.29.24.54.73.54 1.48v2.2c0 .21.14.46.55.38A8 8 0 0 0 8 0Z"/></svg>';
+            madeBoard.append(overlay);
+          }
+        }
+      }
+
+      function revealZeros(startCell) {
+        const queue = [startCell];
+        const seen = new Set([key(startCell.c, startCell.r)]);
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          if (!current || current.flagged) continue;
+          current.open = true;
+
+          if (current.count !== 0) continue;
+
+          for (const [nc, nr] of neighbors(current.c, current.r)) {
+            const next = state.get(key(nc, nr));
+            if (!next || next.open || next.flagged || next.mine) continue;
+            next.open = true;
+            if (next.count === 0) {
+              const nk = key(nc, nr);
+              if (!seen.has(nk)) {
+                seen.add(nk);
+                queue.push(next);
+              }
+            }
+          }
+        }
+      }
+
+      function revealAllBombs() {
+        revealAllMines = true;
+        for (const cell of state.values()) {
+          if (cell.mine) cell.open = true;
+        }
+      }
+
+      function checkWin() {
+        for (const cell of state.values()) {
+          if (!cell.mine && !cell.open) return false;
+        }
+        gameFinished = true;
+        for (const cell of state.values()) {
+          if (cell.mine) cell.flagged = true;
+        }
+        return true;
+      }
+
+      function openCell(c, r) {
+        if (gameFinished) return;
+        const cell = state.get(key(c, r));
+        if (!cell || cell.open || cell.flagged) return;
+        pushHistory();
+
+        if (cell.mine) {
+          cell.open = true;
+          gameFinished = true;
+          revealAllBombs();
+          renderBoard();
+          return;
+        }
+
+        if (cell.count === 0) {
+          revealZeros(cell);
+        } else {
+          cell.open = true;
+        }
+
+        checkWin();
+        renderBoard();
+      }
+
+      function toggleFlag(c, r) {
+        if (gameFinished) return;
+        const cell = state.get(key(c, r));
+        if (!cell || cell.open) return;
+        pushHistory();
+        cell.flagged = !cell.flagged;
+        renderBoard();
+      }
+
+      function renderBoard() {
+        for (const el of allCells) {
+          const c = Number(el.dataset.c);
+          const r = Number(el.dataset.r);
+          const cell = state.get(key(c, r));
+          if (!cell) continue;
+
+          el.className = "cell";
+          el.textContent = "";
+
+          if (cell.open) {
+            el.classList.add("open");
+
+            if (cell.mine && revealAllMines) {
+              el.classList.add("mine");
+            } else if (cell.count > 0) {
+              el.classList.add(`n${cell.count}`);
+              el.textContent = String(cell.count);
+            }
+          } else if (cell.flagged) {
+            el.classList.add("flagged");
+          }
+
+          if (gameFinished && revealAllMines && cell.flagged && !cell.mine) {
+            el.classList.add("wrong-flag");
+          }
+
+          if (debugShowMines && cell.mine) {
+            el.classList.add("debug-mine");
+          }
+        }
+
+        if (undoButton instanceof HTMLButtonElement) {
+          undoButton.disabled = historyStack.length === 0;
+        }
+      }
 
       function setTheme(theme) {
         root.dataset.theme = theme;
@@ -241,6 +607,37 @@
 
       for (const button of themeButtons) {
         button.addEventListener("click", () => setTheme(button.dataset.theme));
+      }
+
+      createBoardDom();
+      buildState();
+      renderBoard();
+
+      if (madeBoard) {
+        madeBoard.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          const cellEl = target.closest(".cell");
+          if (!(cellEl instanceof HTMLButtonElement)) return;
+          openCell(Number(cellEl.dataset.c), Number(cellEl.dataset.r));
+        });
+
+        madeBoard.addEventListener("contextmenu", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          const cellEl = target.closest(".cell");
+          if (!(cellEl instanceof HTMLButtonElement)) return;
+          event.preventDefault();
+          toggleFlag(Number(cellEl.dataset.c), Number(cellEl.dataset.r));
+        });
+      }
+
+      if (resetButton instanceof HTMLButtonElement) {
+        resetButton.addEventListener("click", resetGame);
+      }
+
+      if (undoButton instanceof HTMLButtonElement) {
+        undoButton.addEventListener("click", undoLastMove);
       }
 
       setTheme(startTheme);

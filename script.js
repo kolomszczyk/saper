@@ -25,7 +25,7 @@ const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
-const LONG_PRESS_MS = 250;
+const LONG_PRESS_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE = 4;
 let grid = [];
 let rows = 0;
@@ -443,11 +443,28 @@ function renderBoard() {
         if (shouldSuppressContextMenu(r, c)) return;
         onRightClick(r, c);
       });
-      cellBtn.addEventListener("pointerdown", (e) => onCellPointerDown(e, r, c));
+      cellBtn.addEventListener("pointerdown", (e) => {
+        if (
+          e.isPrimary &&
+          (e.pointerType === "touch" || e.pointerType === "pen")
+        ) {
+          showChordPreview(r, c);
+        }
+        onCellPointerDown(e, r, c);
+      });
       cellBtn.addEventListener("pointermove", onCellPointerMove);
-      cellBtn.addEventListener("pointerup", (e) => onCellPointerUpOrCancel(e, r, c));
-      cellBtn.addEventListener("pointercancel", (e) => onCellPointerUpOrCancel(e, r, c));
-      cellBtn.addEventListener("pointerleave", cancelLongPress);
+      cellBtn.addEventListener("pointerup", (e) => {
+        clearChordPreview();
+        onCellPointerUpOrCancel(e, r, c);
+      });
+      cellBtn.addEventListener("pointercancel", (e) => {
+        clearChordPreview();
+        onCellPointerUpOrCancel(e, r, c);
+      });
+      cellBtn.addEventListener("pointerleave", () => {
+        clearChordPreview();
+        cancelLongPress();
+      });
       cellBtn.addEventListener("touchstart", onCellTouchStart, { passive: true });
       cellBtn.addEventListener("touchmove", onCellTouchMove, { passive: true });
       cellBtn.addEventListener("touchend", cancelLongPress, { passive: true });
