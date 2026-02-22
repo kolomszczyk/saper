@@ -282,6 +282,8 @@ body {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
   box-shadow: var(--picker-shadow);
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
