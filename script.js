@@ -11,12 +11,12 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const boardEl = document.getElementById("board");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
-const messageEl = document.getElementById("message");
 const difficultyEl = document.getElementById("difficulty");
 const newGameEl = document.getElementById("new-game");
 const CELL_SIZE = 24;
 document.documentElement.style.setProperty("--flag-url", `url(\"./flag.svg?v=${Date.now()}\")`);
 document.documentElement.style.setProperty("--bomb-url", `url(\"./bomb.svg?v=${Date.now()}\")`);
+document.documentElement.style.setProperty("--cross-url", `url(\"./cross.svg?v=${Date.now()}\")`);
 
 let grid = [];
 let rows = 0;
@@ -26,6 +26,7 @@ let openedCells = 0;
 let flagCount = 0;
 let started = false;
 let gameOver = false;
+let gameOutcome = "idle";
 let elapsed = 0;
 let timerId = null;
 let chordPreviewCells = [];
@@ -82,12 +83,6 @@ function loadSettings() {
   } catch {
     // Ignore invalid cookie payload.
   }
-}
-
-function setMessage(text, cls = "") {
-  messageEl.textContent = text;
-  messageEl.className = "message";
-  if (cls) messageEl.classList.add(cls);
 }
 
 function setFace(state) {
@@ -189,6 +184,9 @@ function applyCellVisual(cell) {
 
   if (cell.flagged) {
     cell.el.classList.add("flagged");
+    if (!cell.mine && gameOutcome === "lose") {
+      cell.el.classList.add("wrong-flag");
+    }
   }
 }
 
@@ -248,8 +246,18 @@ function revealAllMines() {
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const cell = grid[r][c];
-      if (!cell.mine) continue;
+      if (!cell.mine || cell.flagged) continue;
       cell.open = true;
+      applyCellVisual(cell);
+    }
+  }
+}
+
+function refreshFlagsAfterLoss() {
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const cell = grid[r][c];
+      if (!cell.flagged) continue;
       applyCellVisual(cell);
     }
   }
@@ -280,9 +288,10 @@ function chordOpenCell(r, c) {
 
   if (hitMine) {
     gameOver = true;
+    gameOutcome = "lose";
     stopTimer();
     revealAllMines();
-    setMessage("Przegrana!", "lose");
+    refreshFlagsAfterLoss();
     setFace("lose");
     saveGameState();
     return;
@@ -321,8 +330,8 @@ function checkWin() {
   if (openedCells !== target) return;
 
   gameOver = true;
+  gameOutcome = "win";
   stopTimer();
-  setMessage("Wygrana!", "win");
   setFace("win");
 
   flagCount = 0;
@@ -364,12 +373,6 @@ function serializeGrid() {
 function saveGameState() {
   if (!rows || !cols || !grid.length) return;
 
-  const messageClass = messageEl.classList.contains("win")
-    ? "win"
-    : messageEl.classList.contains("lose")
-      ? "lose"
-      : "";
-
   const serialized = serializeGrid();
   const payload = {
     v: 1,
@@ -381,9 +384,8 @@ function saveGameState() {
     flagCount,
     started,
     gameOver,
+    outcome: gameOutcome,
     elapsed,
-    message: messageEl.textContent,
-    messageClass,
     mines: serialized.mines,
     open: serialized.open,
     flags: serialized.flags,
@@ -428,6 +430,12 @@ function restoreGameState() {
   started = Boolean(saved.started);
   gameOver = Boolean(saved.gameOver);
   elapsed = Math.max(0, Math.min(999, Number(saved.elapsed) || 0));
+  gameOutcome =
+    saved.outcome === "win" || saved.outcome === "lose"
+      ? saved.outcome
+      : saved.messageClass === "win" || saved.messageClass === "lose"
+        ? saved.messageClass
+        : "idle";
 
   createGrid();
   renderBoard();
@@ -462,13 +470,9 @@ function restoreGameState() {
     }
   }
 
-  const messageClass = saved.messageClass === "win" || saved.messageClass === "lose" ? saved.messageClass : "";
-  const messageText = typeof saved.message === "string" && saved.message.trim() ? saved.message : "Powodzenia!";
-  setMessage(messageText, messageClass);
-
-  if (messageClass === "win") {
+  if (gameOutcome === "win") {
     setFace("win");
-  } else if (messageClass === "lose") {
+  } else if (gameOutcome === "lose") {
     setFace("lose");
   } else {
     setFace("idle");
@@ -506,9 +510,10 @@ function onLeftClick(r, c) {
 
   if (cell.mine) {
     gameOver = true;
+    gameOutcome = "lose";
     stopTimer();
     revealAllMines();
-    setMessage("Przegrana!", "lose");
+    refreshFlagsAfterLoss();
     setFace("lose");
     saveGameState();
     return;
@@ -545,11 +550,10 @@ function newGame() {
   flagCount = 0;
   started = false;
   gameOver = false;
+  gameOutcome = "idle";
   elapsed = 0;
   clearChordPreview();
   stopTimer();
-
-  setMessage("Powodzenia!");
   setFace("idle");
   createGrid();
   renderBoard();

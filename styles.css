@@ -8,6 +8,7 @@
   --digit-red: #ff2a2a;
   --flag-url: url("./flag.svg");
   --bomb-url: url("./bomb.svg");
+  --cross-url: url("./cross.svg");
 }
 
 * {
@@ -47,7 +48,7 @@ body {
 }
 
 .window {
-  margin-left: 38px;
+  margin-left: 0;
   width: fit-content;
   background: var(--mid);
   border-top: 3px solid var(--light);
@@ -144,6 +145,7 @@ select {
 .cell {
   width: 24px;
   height: 24px;
+  position: relative;
   border: 2px solid;
   border-color: var(--light) var(--dark) var(--dark) var(--light);
   background: #bdbdbd;
@@ -189,6 +191,23 @@ select {
   background-repeat: no-repeat;
   background-position: center;
   background-size: 24px 24px;
+}
+
+.cell.flagged.wrong-flag {
+  background-color: #df6767;
+  border-color: #ffb1b1 #8e2e2e #8e2e2e #ffb1b1;
+}
+
+.cell.flagged.wrong-flag::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--cross-url);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+  opacity: 1;
+  pointer-events: none;
 }
 
 .n1 { color: #0000ff; }
