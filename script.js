@@ -13,6 +13,7 @@ const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
 const newGameEl = document.getElementById("new-game");
+const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
 document.documentElement.style.setProperty("--flag-url", `url(\"./flag.svg?v=${Date.now()}\")`);
 document.documentElement.style.setProperty("--bomb-url", `url(\"./bomb.svg?v=${Date.now()}\")`);
@@ -30,6 +31,7 @@ let gameOutcome = "idle";
 let elapsed = 0;
 let timerId = null;
 let chordPreviewCells = [];
+let undoState = null;
 
 function format3(n) {
   return String(n).padStart(3, "0").slice(-3);
@@ -95,6 +97,10 @@ function setFace(state) {
     return;
   }
   newGameEl.textContent = "🙂";
+}
+
+function updateReplayButton() {
+  replayEl.disabled = !(gameOutcome === "lose" && undoState);
 }
 
 function updateCounters() {
@@ -293,6 +299,7 @@ function chordOpenCell(r, c) {
     revealAllMines();
     refreshFlagsAfterLoss();
     setFace("lose");
+    updateReplayButton();
     saveGameState();
     return;
   }
@@ -333,6 +340,7 @@ function checkWin() {
   gameOutcome = "win";
   stopTimer();
   setFace("win");
+  updateReplayButton();
 
   flagCount = 0;
   for (let r = 0; r < rows; r += 1) {
@@ -370,11 +378,9 @@ function serializeGrid() {
   };
 }
 
-function saveGameState() {
-  if (!rows || !cols || !grid.length) return;
-
+function buildStatePayload() {
   const serialized = serializeGrid();
-  const payload = {
+  return {
     v: 1,
     difficulty: difficultyEl.value,
     rows,
@@ -390,6 +396,99 @@ function saveGameState() {
     open: serialized.open,
     flags: serialized.flags,
   };
+}
+
+function captureUndoState() {
+  if (!rows || !cols || !grid.length || gameOver) return;
+  undoState = buildStatePayload();
+  updateReplayButton();
+}
+
+function applyStateSnapshot(saved) {
+  if (!saved) return;
+
+  const size = Number(saved.rows) * Number(saved.cols);
+  if (
+    !Number.isInteger(size) ||
+    size <= 0 ||
+    typeof saved.mines !== "string" ||
+    typeof saved.open !== "string" ||
+    typeof saved.flags !== "string" ||
+    saved.mines.length !== size ||
+    saved.open.length !== size ||
+    saved.flags.length !== size
+  ) {
+    return;
+  }
+
+  rows = Number(saved.rows);
+  cols = Number(saved.cols);
+  mineCount = Number(saved.mineCount);
+  openedCells = 0;
+  flagCount = 0;
+  started = Boolean(saved.started);
+  gameOver = Boolean(saved.gameOver);
+  gameOutcome =
+    saved.outcome === "win" || saved.outcome === "lose"
+      ? saved.outcome
+      : "idle";
+  elapsed = Math.max(0, Math.min(999, Number(saved.elapsed) || 0));
+
+  clearChordPreview();
+  stopTimer();
+  createGrid();
+  renderBoard();
+
+  let index = 0;
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const cell = grid[r][c];
+      cell.mine = saved.mines[index] === "1";
+      cell.open = saved.open[index] === "1";
+      cell.flagged = cell.open ? false : saved.flags[index] === "1";
+      if (cell.open && !cell.mine) openedCells += 1;
+      if (cell.flagged) flagCount += 1;
+      index += 1;
+    }
+  }
+
+  if (started) calculateAdjacents();
+
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      applyCellVisual(grid[r][c]);
+    }
+  }
+
+  if (gameOutcome === "win") {
+    setFace("win");
+  } else if (gameOutcome === "lose") {
+    setFace("lose");
+  } else {
+    setFace("idle");
+  }
+
+  updateCounters();
+  updateReplayButton();
+
+  if (started && !gameOver) {
+    startTimer();
+  }
+
+  saveGameState();
+}
+
+function undoLoss() {
+  if (gameOutcome !== "lose" || !undoState) return;
+  const snapshot = undoState;
+  undoState = null;
+  applyStateSnapshot(snapshot);
+}
+
+function saveGameState() {
+  if (!rows || !cols || !grid.length) return;
+
+  const payload = buildStatePayload();
 
   setCookie(COOKIE_STATE, JSON.stringify(payload));
   saveSettings();
@@ -477,6 +576,7 @@ function restoreGameState() {
   } else {
     setFace("idle");
   }
+  updateReplayButton();
 
   updateCounters();
 
@@ -494,11 +594,14 @@ function onLeftClick(r, c) {
   clearChordPreview();
   const cell = grid[r][c];
   if (cell.open) {
+    captureUndoState();
     chordOpenCell(r, c);
     saveGameState();
     return;
   }
   if (cell.flagged) return;
+
+  captureUndoState();
 
   if (!started) {
     started = true;
@@ -515,6 +618,7 @@ function onLeftClick(r, c) {
     revealAllMines();
     refreshFlagsAfterLoss();
     setFace("lose");
+    updateReplayButton();
     saveGameState();
     return;
   }
@@ -552,9 +656,11 @@ function newGame() {
   gameOver = false;
   gameOutcome = "idle";
   elapsed = 0;
+  undoState = null;
   clearChordPreview();
   stopTimer();
   setFace("idle");
+  updateReplayButton();
   createGrid();
   renderBoard();
   updateCounters();
@@ -563,6 +669,7 @@ function newGame() {
 
 window.addEventListener("mouseup", clearChordPreview);
 newGameEl.addEventListener("click", newGame);
+replayEl.addEventListener("click", undoLoss);
 difficultyEl.addEventListener("change", newGame);
 
 loadSettings();
