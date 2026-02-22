@@ -1,17 +1,42 @@
 (() => {
   const DIGITS = 4;
-  const MIN_VALUE = 1;
+  const MIN_VALUE = 0;
   const MAX_VALUE = 500;
+  const SETTINGS_COOKIE = "saper_settings";
+  const SETTINGS_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
   const selector = "#map-width, #map-height, #games-per-day, #bomb-count";
   const inputs = Array.from(document.querySelectorAll(selector));
   const customMapToggle = document.getElementById("custom-map");
+  const mapWidthInput = document.getElementById("map-width");
+  const mapHeightInput = document.getElementById("map-height");
+  const bombCountInput = document.getElementById("bomb-count");
+  const gamesPerDayInput = document.getElementById("games-per-day");
+  const saveButton = document.querySelector(".made-settings-save");
   const leftColumn = document.querySelector(".made-settings-left-col");
+  const bombCountField = document.querySelector(".made-settings-bombs-field");
+  const dailyGameLimit = window.sharedDailyGameLimit;
+  const cookies = window.sharedCookies;
   const customMapControlledInputs = [
     document.getElementById("map-width"),
     document.getElementById("map-height"),
+    document.getElementById("bomb-count"),
   ].filter(Boolean);
 
   if (!inputs.length) return;
+
+  const readSettings = () => {
+    const raw = cookies?.getCookie?.(SETTINGS_COOKIE) ?? "";
+    if (!raw) return {};
+    try {
+      return JSON.parse(raw) ?? {};
+    } catch {
+      return {};
+    }
+  };
+
+  const writeSettings = (settings) => {
+    cookies?.setCookie?.(SETTINGS_COOKIE, JSON.stringify(settings ?? {}), SETTINGS_COOKIE_MAX_AGE);
+  };
 
   const sanitizeDigits = (value) => value.replace(/\D+/g, "");
 
@@ -82,10 +107,33 @@
     });
   }
 
+  if (gamesPerDayInput && dailyGameLimit?.getGamesPerDay) {
+    gamesPerDayInput.value = String(dailyGameLimit.getGamesPerDay());
+    applyFormattedValue(gamesPerDayInput);
+  }
+
+  const savedSettings = readSettings();
+  if (customMapToggle && typeof savedSettings.customMapEnabled === "boolean") {
+    customMapToggle.checked = savedSettings.customMapEnabled;
+  }
+  if (mapWidthInput && savedSettings.customMapWidth != null) {
+    mapWidthInput.value = String(savedSettings.customMapWidth);
+    applyFormattedValue(mapWidthInput);
+  }
+  if (mapHeightInput && savedSettings.customMapHeight != null) {
+    mapHeightInput.value = String(savedSettings.customMapHeight);
+    applyFormattedValue(mapHeightInput);
+  }
+  if (bombCountInput && savedSettings.customMapBombCount != null) {
+    bombCountInput.value = String(savedSettings.customMapBombCount);
+    applyFormattedValue(bombCountInput);
+  }
+
   const syncCustomMapState = () => {
     if (!customMapToggle || !leftColumn) return;
     const isOn = customMapToggle.checked;
     leftColumn.classList.toggle("is-custom-map-off", !isOn);
+    bombCountField?.classList.toggle("is-custom-map-off", !isOn);
     for (const input of customMapControlledInputs) {
       input.disabled = !isOn;
     }
@@ -94,5 +142,23 @@
   if (customMapToggle) {
     customMapToggle.addEventListener("change", syncCustomMapState);
     syncCustomMapState();
+  }
+
+  if (saveButton && gamesPerDayInput && dailyGameLimit?.setGamesPerDay) {
+    saveButton.addEventListener("click", () => {
+      const settings = readSettings();
+      settings.customMapEnabled = Boolean(customMapToggle?.checked);
+      if (mapWidthInput) settings.customMapWidth = Number.parseInt(mapWidthInput.value, 10) || 0;
+      if (mapHeightInput) settings.customMapHeight = Number.parseInt(mapHeightInput.value, 10) || 0;
+      if (bombCountInput) settings.customMapBombCount = Number.parseInt(bombCountInput.value, 10) || 0;
+      writeSettings(settings);
+
+      const savedLimit = dailyGameLimit.setGamesPerDay(gamesPerDayInput.value);
+      gamesPerDayInput.value = String(savedLimit);
+      applyFormattedValue(gamesPerDayInput);
+      window.dispatchEvent(new CustomEvent("saper:daily-limit-settings-saved", {
+        detail: { gamesPerDay: savedLimit },
+      }));
+    });
   }
 })();

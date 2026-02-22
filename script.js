@@ -33,6 +33,7 @@ const boardInput = window.createBoardInputState({
   moveTolerance: LONG_PRESS_MOVE_TOLERANCE,
 });
 const { getCookie: readCookie, setCookie: writeCookie } = window.sharedCookies;
+const dailyGameLimit = window.sharedDailyGameLimit;
 const {
   countNeighborsMatching,
   collectChordPreviewCoords,
@@ -59,6 +60,7 @@ let elapsed = 0;
 let timerId = null;
 let chordPreviewCells = [];
 let undoState = null;
+let dailyLimitLocked = false;
 
 function parsePositiveInt(value) {
   const n = Number(value);
@@ -81,8 +83,36 @@ function readCustomBoardConfig() {
 
 const customBoardConfig = readCustomBoardConfig();
 
+function readSettingsObject() {
+  const raw = getCookie(COOKIE_SETTINGS);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function readSavedCustomBoardConfig() {
+  if (customBoardConfig) return null;
+  const settings = readSettingsObject();
+  if (!settings.customMapEnabled) return null;
+
+  const rows = parsePositiveInt(settings.customMapHeight);
+  const cols = parsePositiveInt(settings.customMapWidth);
+  const mines = parsePositiveInt(settings.customMapBombCount);
+  if (!rows || !cols || mines == null) return null;
+  const cellCount = rows * cols;
+  if (mines >= cellCount) return null;
+
+  return { rows, cols, mines };
+}
+
 function getSelectedBoardConfig() {
   if (customBoardConfig) return customBoardConfig;
+  if ((difficultyEl?.value ?? "") === CUSTOM_DIFFICULTY_KEY) {
+    return readSavedCustomBoardConfig() ?? DIFFICULTIES.medium;
+  }
   return DIFFICULTIES[difficultyEl?.value] ?? DIFFICULTIES.medium;
 }
 
@@ -123,13 +153,93 @@ function clearCookie(name) {
 }
 
 function saveSettings() {
+  let currentSettings = {};
+  try {
+    currentSettings = JSON.parse(getCookie(COOKIE_SETTINGS) || "{}") || {};
+  } catch {
+    currentSettings = {};
+  }
+
   setCookie(
     COOKIE_SETTINGS,
     JSON.stringify({
+      ...currentSettings,
       difficulty: difficultyEl?.value ?? "medium",
       theme: themeEl?.value ?? "dark",
     }),
   );
+}
+
+function getDailyLimitStatus() {
+  return dailyGameLimit?.getStatus?.() ?? {
+    reached: false,
+    remaining: Number.POSITIVE_INFINITY,
+    count: 0,
+    limit: Number.POSITIVE_INFINITY,
+  };
+}
+
+function removeDailyLimitMessage() {
+  const current = boardEl.querySelector(".daily-limit-message");
+  if (current) current.remove();
+}
+
+function renderDisabledLimitBoard(_status = getDailyLimitStatus()) {
+  const fallbackConfig = getSelectedBoardConfig();
+  const limitRows = rows || fallbackConfig.rows;
+  const limitCols = cols || fallbackConfig.cols;
+
+  boardEl.innerHTML = "";
+  boardEl.classList.add("is-daily-limit-board");
+  boardEl.style.gridTemplateColumns = `repeat(${limitCols}, ${CELL_SIZE}px)`;
+
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < limitRows * limitCols; i += 1) {
+    const cellEl = document.createElement("div");
+    cellEl.className = "cell open daily-limit-cell";
+    cellEl.setAttribute("aria-hidden", "true");
+    fragment.appendChild(cellEl);
+  }
+
+  boardEl.appendChild(fragment);
+}
+
+function unlockDailyLimitBoard() {
+  if (!dailyLimitLocked) return;
+  dailyLimitLocked = false;
+  boardEl.classList.remove("is-daily-limit-board");
+  newGameEl.disabled = false;
+  replayEl.disabled = !(gameOutcome === "lose" && undoState);
+  for (const btn of difficultyButtons) {
+    if (customBoardConfig) continue;
+    btn.disabled = false;
+    btn.removeAttribute("aria-disabled");
+  }
+}
+
+function lockBoardForDailyLimit(status = getDailyLimitStatus()) {
+  dailyLimitLocked = true;
+  clearChordPreview();
+  stopTimer();
+  renderDisabledLimitBoard(status);
+
+  newGameEl.disabled = true;
+  replayEl.disabled = true;
+  for (const btn of difficultyButtons) {
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+  }
+  requestAnimationFrame(updateBoardMobileScale);
+}
+
+function shouldBlockNewDailyGame() {
+  const status = getDailyLimitStatus();
+  if (!status.reached) {
+    unlockDailyLimitBoard();
+    return false;
+  }
+  lockBoardForDailyLimit(status);
+  return true;
 }
 
 function syncDifficultyButtons() {
@@ -156,12 +266,19 @@ function applyThemeSelection() {
 
 function loadSettings() {
   const raw = getCookie(COOKIE_SETTINGS);
-  if (!raw) return;
+  if (!raw) {
+    syncCustomDifficultyAvailability();
+    return;
+  }
   try {
     const parsed = JSON.parse(raw);
-    if (!customBoardConfig && parsed && typeof parsed.difficulty === "string" && DIFFICULTIES[parsed.difficulty]) {
-      difficultyEl.value = parsed.difficulty;
-      syncDifficultyButtons();
+    if (!customBoardConfig && parsed && typeof parsed.difficulty === "string") {
+      const canUseSavedCustom =
+        parsed.difficulty === CUSTOM_DIFFICULTY_KEY && Boolean(readSavedCustomBoardConfig());
+      if (DIFFICULTIES[parsed.difficulty] || canUseSavedCustom) {
+        difficultyEl.value = parsed.difficulty;
+        syncDifficultyButtons();
+      }
     }
     if (parsed && typeof parsed.theme === "string" && THEMES[parsed.theme]) {
       themeEl.value = parsed.theme;
@@ -170,6 +287,29 @@ function loadSettings() {
     }
   } catch {
     // Ignore invalid cookie payload.
+  } finally {
+    syncCustomDifficultyAvailability();
+  }
+}
+
+function syncCustomDifficultyAvailability() {
+  const customBtn = difficultyButtons.find((btn) => btn.dataset.difficulty === CUSTOM_DIFFICULTY_KEY);
+  if (!customBtn) return;
+  if (customBoardConfig) {
+    customBtn.disabled = true;
+    customBtn.setAttribute("aria-disabled", "true");
+    return;
+  }
+
+  const customConfig = readSavedCustomBoardConfig();
+  const canUseCustom = Boolean(customConfig);
+  customBtn.hidden = !canUseCustom;
+  customBtn.disabled = !canUseCustom;
+  customBtn.setAttribute("aria-disabled", String(!canUseCustom));
+
+  if (!canUseCustom && difficultyEl?.value === CUSTOM_DIFFICULTY_KEY) {
+    difficultyEl.value = "medium";
+    syncDifficultyButtons();
   }
 }
 
@@ -745,7 +885,11 @@ function restoreGameState() {
     return false;
   }
 
-  const config = customBoardConfig ?? DIFFICULTIES[saved.difficulty];
+  const config =
+    customBoardConfig ??
+    (saved.difficulty === CUSTOM_DIFFICULTY_KEY
+      ? readSavedCustomBoardConfig()
+      : DIFFICULTIES[saved.difficulty]);
   if (!config) return false;
   if (
     !matchesBoardSignature(saved, config.rows, config.cols, config.mines) ||
@@ -820,6 +964,7 @@ function restoreGameState() {
 }
 
 function onLeftClick(r, c) {
+  if (dailyLimitLocked) return;
   if (gameOver) return;
   clearChordPreview();
   const cell = grid[r][c];
@@ -834,6 +979,11 @@ function onLeftClick(r, c) {
   captureUndoState();
 
   if (!started) {
+    const consumeResult = dailyGameLimit?.consumeGame?.();
+    if (consumeResult && !consumeResult.ok) {
+      lockBoardForDailyLimit(consumeResult);
+      return;
+    }
     started = true;
     placeMines(r, c);
     startTimer();
@@ -858,6 +1008,7 @@ function onLeftClick(r, c) {
 }
 
 function onRightClick(r, c) {
+  if (dailyLimitLocked) return;
   if (gameOver) return;
   const cell = grid[r][c];
   if (cell.open) return;
@@ -875,6 +1026,7 @@ function onRightClick(r, c) {
 }
 
 function newGame() {
+  if (shouldBlockNewDailyGame()) return;
   syncDifficultyButtons();
   const config = getSelectedBoardConfig();
   rows = config.rows;
@@ -918,7 +1070,12 @@ for (const btn of difficultyButtons) {
   btn.addEventListener("click", () => {
     if (customBoardConfig) return;
     const nextDifficulty = btn.dataset.difficulty;
-    if (!nextDifficulty || !DIFFICULTIES[nextDifficulty]) return;
+    if (!nextDifficulty) return;
+    if (nextDifficulty === CUSTOM_DIFFICULTY_KEY) {
+      if (!readSavedCustomBoardConfig()) return;
+    } else if (!DIFFICULTIES[nextDifficulty]) {
+      return;
+    }
     difficultyEl.value = nextDifficulty;
     syncDifficultyButtons();
     newGame();
@@ -945,7 +1102,9 @@ for (const btn of themeButtons) {
 loadSettings();
 syncThemeButtons();
 applyThemeSelection();
-if (!restoreGameState()) {
+if (shouldBlockNewDailyGame()) {
+  updateCounters();
+} else if (!restoreGameState()) {
   newGame();
 } else {
   requestAnimationFrame(updateBoardMobileScale);

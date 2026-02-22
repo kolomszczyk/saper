@@ -60,8 +60,8 @@
   --mid: #c6c6c6;
   --dark: #7b7b7b;
   --deep: #4f4f4f;
-  --digit-bg: #111111;
-  --digit-red: #ff2a2a;
+  --digit-bg: #8f9a63;
+  --digit-red: #2a311f;
   --body-background: var(--bg);
   --body-text: #000000;
   --link-color: #111111;
@@ -99,6 +99,10 @@
   --n8-color: #808080;
   --message-win: #1d7a19;
   --message-lose: #a50000;
+}
+
+:root[data-theme="light"] .digits span {
+  text-shadow: none;
 }
 
 * {
@@ -474,6 +478,41 @@ body {
 .credit-line a:hover,
 .credit-line a:focus-visible {
   color: #7b7b7b;
+}
+
+.board.is-daily-limit-board,
+.made-board.is-daily-limit-board {
+  position: relative;
+}
+
+.daily-limit-cell {
+  cursor: default;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.daily-limit-message {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  z-index: 5;
+  pointer-events: none;
+  align-self: center;
+  justify-self: center;
+  min-width: min(90%, 360px);
+  max-width: calc(100% - 18px);
+  min-height: 72px;
+  padding: 12px 14px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.35;
+  color: var(--digit-red);
+  background: rgba(6, 7, 8, 0.92);
+  border-top: 2px solid var(--deep);
+  border-left: 2px solid var(--deep);
+  border-right: 2px solid var(--digits-frame);
+  border-bottom: 2px solid var(--digits-frame);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.35);
 }
 
 @media (max-width: 900px) {

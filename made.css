@@ -195,12 +195,29 @@
   cursor: default;
 }
 
+:root[data-theme="light"] .made-settings-digital-input {
+  text-shadow: none;
+}
+
 .made-settings-left-col.is-custom-map-off .made-settings-pair .made-settings-digital-input {
   color: transparent;
   -webkit-text-fill-color: transparent;
   text-shadow: none;
   background-color: #050607;
   background-image: none;
+}
+
+.made-settings-bombs-field.is-custom-map-off .made-settings-digital-input {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  background-color: #050607;
+  background-image: none;
+}
+
+:root[data-theme="light"] .made-settings-left-col.is-custom-map-off .made-settings-pair .made-settings-digital-input,
+:root[data-theme="light"] .made-settings-bombs-field.is-custom-map-off .made-settings-digital-input {
+  background-color: var(--digit-bg);
 }
 
 .made-settings-left-col.is-custom-map-off .made-settings-pair .made-settings-field > label {
@@ -479,8 +496,12 @@
 }
 
 :root[data-theme="light"] .made-board-overlay.is-text-outline {
-  color: var(--digit-red);
-  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+  color: var(--digit-bg);
+  text-shadow:
+    1px 0 0 var(--digit-red),
+    -1px 0 0 var(--digit-red),
+    0 1px 0 var(--digit-red),
+    0 -1px 0 var(--digit-red);
 }
 
 :root[data-theme="dark"] .made-board-overlay.is-text-outline {
@@ -528,6 +549,12 @@
   box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.35), 0 0 10px rgba(255, 35, 35, 0.22);
 }
 
+:root[data-theme="light"] .made-board-overlay.is-logo.is-clickable a:hover,
+:root[data-theme="light"] .made-board-overlay.is-logo.is-clickable a:focus-visible {
+  background: rgba(143, 154, 99, 0.22);
+  box-shadow: 0 0 0 1px rgba(42, 49, 31, 0.35);
+}
+
 .made-board-overlay.is-logo svg {
   width: 34px;
   height: 34px;
@@ -556,6 +583,22 @@
     drop-shadow(-1px 0 0 var(--digit-red))
     drop-shadow(0 1px 0 var(--digit-red))
     drop-shadow(0 -1px 0 var(--digit-red));
+}
+
+:root[data-theme="light"] .made-board-overlay.is-logo svg [fill="var(--digit-red)"] {
+  fill: #000000;
+}
+
+:root[data-theme="light"] .made-board-overlay.is-logo svg [stroke="var(--digit-red)"] {
+  stroke: #000000;
+}
+
+:root[data-theme="light"] .made-board-overlay.is-logo svg [fill="#000000"] {
+  fill: var(--digit-bg);
+}
+
+:root[data-theme="light"] .made-board-overlay.is-logo svg [stroke="#000000"] {
+  stroke: var(--digit-bg);
 }
 
 .made-board-overlay.is-link {
@@ -596,6 +639,21 @@
   background: rgba(255, 71, 71, 0.08);
   box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.25);
   text-shadow: 0 0 2px #ff1c1c, 0 0 10px rgba(255, 35, 35, 0.7);
+}
+
+:root[data-theme="light"] .made-board-overlay.is-text-clickable a:hover {
+  background: rgba(143, 154, 99, 0.22);
+  box-shadow: 0 0 0 1px rgba(42, 49, 31, 0.35);
+  text-shadow:
+    1px 0 0 var(--digit-red),
+    -1px 0 0 var(--digit-red),
+    0 1px 0 var(--digit-red),
+    0 -1px 0 var(--digit-red);
+}
+
+:root[data-theme="light"] .made-board-overlay.is-text-clickable a:focus-visible {
+  background: rgba(143, 154, 99, 0.22);
+  box-shadow: 0 0 0 1px rgba(42, 49, 31, 0.35);
 }
 
 .made-board-overlay.is-text-clickable a:focus-visible {

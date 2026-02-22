@@ -1,4 +1,5 @@
 const root = document.documentElement;
+const COOKIE_SETTINGS = "saper_settings";
 const MADE_COOKIE_STATE = "saper_made_state";
 const MADE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const themeButtons = Array.from(document.querySelectorAll(".theme-picker .theme-button"));
@@ -11,8 +12,7 @@ const madeBoardZoom = document.querySelector(".made-board-zoom");
 const madeBoardStack = document.getElementById("made-board-stack");
 const resetButton = document.getElementById("made-reset");
 const undoButton = document.getElementById("made-undo");
-const savedTheme = localStorage.getItem("theme");
-const startTheme = savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
+let startTheme = "dark";
 
 const boardCols = 22;
 const boardRows = 14;
@@ -27,6 +27,7 @@ const boardInput = window.createBoardInputState({
   moveTolerance: LONG_PRESS_MOVE_TOLERANCE,
 });
 const { getCookie: readCookie, setCookie: writeCookie } = window.sharedCookies;
+const dailyGameLimit = window.sharedDailyGameLimit;
 const {
   countNeighborsMatching,
   collectChordPreviewCoords,
@@ -43,6 +44,7 @@ const {
 } = window.sharedMinesweeperUtils;
 let revealAllMines = false;
 let gameFinished = false;
+let dailyLimitLocked = false;
 const debugShowMines = false;
 const startAsUnplayed = true;
 const openReservedTextTilesAtStart = false;
@@ -194,6 +196,102 @@ function getCookie(name) {
   return readCookie(name);
 }
 
+function readSharedSettings() {
+  const raw = getCookie(COOKIE_SETTINGS);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function getSavedThemeFromSettings() {
+  const settings = readSharedSettings();
+  return settings.theme === "light" || settings.theme === "dark" ? settings.theme : "dark";
+}
+
+function saveThemeToSettings(theme) {
+  const settings = readSharedSettings();
+  settings.theme = theme;
+  setCookie(COOKIE_SETTINGS, JSON.stringify(settings));
+}
+
+function getDailyLimitStatus() {
+  return dailyGameLimit?.getStatus?.() ?? {
+    reached: false,
+    remaining: Number.POSITIVE_INFINITY,
+    count: 0,
+    limit: Number.POSITIVE_INFINITY,
+  };
+}
+
+function removeMadeDailyLimitMessage() {
+  if (!madeBoardStack) return;
+  const current = madeBoardStack.querySelector(".daily-limit-message");
+  if (current) current.remove();
+}
+
+function renderMadeDisabledLimitBoard(_status = getDailyLimitStatus()) {
+  if (!madeBoard || !madeBoardOverlays) return;
+
+  // Keep texts/logos visible by reusing the normal board/overlay DOM, then freeze all tiles.
+  createBoardDom();
+  madeBoard.classList.add("is-daily-limit-board");
+
+  for (const el of allCells) {
+    el.className = "cell open daily-limit-cell";
+    el.disabled = true;
+    el.setAttribute("tabindex", "-1");
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
+function unlockMadeBoardForDailyLimit() {
+  if (!dailyLimitLocked) return;
+  dailyLimitLocked = false;
+  removeMadeDailyLimitMessage();
+  madeBoard?.classList.remove("is-daily-limit-board");
+  if (resetButton instanceof HTMLButtonElement) resetButton.disabled = false;
+}
+
+function lockMadeBoardForDailyLimit(status = getDailyLimitStatus()) {
+  dailyLimitLocked = true;
+  clearChordPreview();
+  cancelLongPress();
+  removeMadeDailyLimitMessage();
+  renderMadeDisabledLimitBoard(status);
+
+  if (resetButton instanceof HTMLButtonElement) resetButton.disabled = true;
+  if (undoButton instanceof HTMLButtonElement) undoButton.disabled = true;
+  requestAnimationFrame(updateMadeBoardMobileScale);
+}
+
+function syncMadeBoardAfterDailyLimitSettingsSave() {
+  const status = getDailyLimitStatus();
+
+  if (status.reached) {
+    lockMadeBoardForDailyLimit(status);
+    return;
+  }
+
+  if (!dailyLimitLocked) return;
+
+  unlockMadeBoardForDailyLimit();
+  createBoardDom();
+
+  if (!restoreGameState()) {
+    if (!buildState()) return;
+    autoRevealTextZones();
+    autoRevealExtraSafeCells();
+    autoFlagAroundOpenArea();
+  }
+
+  renderBoard();
+  saveGameState();
+  requestAnimationFrame(updateMadeBoardMobileScale);
+}
+
 function isReservedTextTile(c, r) {
   return reservedTextTileKeys.has(key(c, r));
 }
@@ -207,6 +305,15 @@ function neighbors(c, r) {
 }
 
 function buildState(reuseCurrentMineLayout = false) {
+  if (!reuseCurrentMineLayout) {
+    const consumeResult = dailyGameLimit?.consumeGame?.();
+    if (consumeResult && !consumeResult.ok) {
+      lockMadeBoardForDailyLimit(consumeResult);
+      return false;
+    }
+  }
+
+  unlockMadeBoardForDailyLimit();
   state.clear();
   revealAllMines = false;
   gameFinished = false;
@@ -264,6 +371,8 @@ function buildState(reuseCurrentMineLayout = false) {
       }
     }
   }
+
+  return true;
 }
 
 function snapshotState() {
@@ -398,7 +507,7 @@ function restoreGameState() {
   for (const [c, r] of saved.data.flags) flagKeys.add(key(c, r));
 
   minePositions = restoredMinePositions;
-  buildState(true);
+  if (!buildState(true)) return false;
   revealAllMines = Boolean(saved.data.revealAllMines);
   gameFinished = Boolean(saved.data.gameFinished);
   for (const cell of state.values()) {
@@ -441,7 +550,8 @@ function undoLastMove() {
 }
 
 function resetGame() {
-  buildState();
+  if (dailyLimitLocked) return;
+  if (!buildState()) return;
   autoRevealTextZones();
   autoRevealExtraSafeCells();
   autoFlagAroundOpenArea();
@@ -549,6 +659,8 @@ function autoRevealExtraSafeCells() {
 
 function createBoardDom() {
   if (!madeBoard || !madeBoardOverlays) return;
+  removeMadeDailyLimitMessage();
+  madeBoard.classList.remove("is-daily-limit-board");
   madeBoard.innerHTML = "";
   madeBoardOverlays.innerHTML = "";
   allCells.length = 0;
@@ -796,6 +908,7 @@ function showChordPreview(c, r) {
 }
 
 function chordOpenCell(c, r) {
+  if (dailyLimitLocked) return;
   if (gameFinished) return;
   const result = runChordReveal([c, r], {
     getCell: ([nc, nr]) => state.get(key(nc, nr)),
@@ -843,6 +956,7 @@ function checkWin() {
 }
 
 function openCell(c, r) {
+  if (dailyLimitLocked) return;
   if (gameFinished) return;
   const cell = state.get(key(c, r));
   if (!cell) return;
@@ -875,6 +989,7 @@ function openCell(c, r) {
 }
 
 function toggleFlag(c, r) {
+  if (dailyLimitLocked) return;
   if (gameFinished) return;
   const cell = state.get(key(c, r));
   if (!cell || cell.open) return;
@@ -885,6 +1000,12 @@ function toggleFlag(c, r) {
 }
 
 function renderBoard() {
+  if (dailyLimitLocked) {
+    if (undoButton instanceof HTMLButtonElement) {
+      undoButton.disabled = true;
+    }
+    return;
+  }
   for (const el of allCells) {
     const c = Number(el.dataset.c);
     const r = Number(el.dataset.r);
@@ -916,7 +1037,7 @@ function renderBoard() {
 
 function setTheme(theme) {
   root.dataset.theme = theme;
-  localStorage.setItem("theme", theme);
+  saveThemeToSettings(theme);
   for (const button of themeButtons) {
     const active = button.dataset.theme === theme;
     button.classList.toggle("is-active", active);
@@ -974,16 +1095,28 @@ for (const button of themeButtons) {
   button.addEventListener("click", () => setTheme(button.dataset.theme));
 }
 
-createBoardDom();
-if (!restoreGameState()) {
-  buildState();
-  autoRevealTextZones();
-  autoRevealExtraSafeCells();
-  autoFlagAroundOpenArea();
+const initialDailyLimitStatus = getDailyLimitStatus();
+let madeBoardInitialized = false;
+
+if (initialDailyLimitStatus.reached) {
+  lockMadeBoardForDailyLimit(initialDailyLimitStatus);
+} else {
+  createBoardDom();
+  if (restoreGameState()) {
+    madeBoardInitialized = true;
+  } else if (buildState()) {
+    autoRevealTextZones();
+    autoRevealExtraSafeCells();
+    autoFlagAroundOpenArea();
+    madeBoardInitialized = true;
+  }
 }
-renderBoard();
-saveGameState();
-requestAnimationFrame(updateMadeBoardMobileScale);
+
+if (madeBoardInitialized) {
+  renderBoard();
+  saveGameState();
+  requestAnimationFrame(updateMadeBoardMobileScale);
+}
 
 if (madeBoard) {
   madeBoard.addEventListener("click", (event) => {
@@ -1065,5 +1198,7 @@ window.addEventListener("orientationchange", () => requestAnimationFrame(updateM
 window.addEventListener("mouseup", cancelLongPress);
 window.addEventListener("pointerup", cancelLongPress);
 window.addEventListener("pointercancel", cancelLongPress);
+window.addEventListener("saper:daily-limit-settings-saved", syncMadeBoardAfterDailyLimitSettingsSave);
 
+startTheme = getSavedThemeFromSettings();
 setTheme(startTheme);
