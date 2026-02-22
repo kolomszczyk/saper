@@ -465,6 +465,17 @@ body {
   text-transform: uppercase;
 }
 
+.credit-line a,
+.credit-line a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.credit-line a:hover,
+.credit-line a:focus-visible {
+  color: #7b7b7b;
+}
+
 @media (max-width: 900px) {
   .top-menu,
   .window {
