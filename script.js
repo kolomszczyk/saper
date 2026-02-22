@@ -33,8 +33,19 @@ const boardInput = window.createBoardInputState({
   moveTolerance: LONG_PRESS_MOVE_TOLERANCE,
 });
 const { getCookie: readCookie, setCookie: writeCookie } = window.sharedCookies;
-const { countNeighborsMatching, floodRevealZeroArea, neighborsByBounds, renderBaseCellVisual } =
-  window.sharedMinesweeperUtils;
+const {
+  countNeighborsMatching,
+  collectChordPreviewCoords,
+  removeClassFromTargets,
+  forEachBoardCoord,
+  floodRevealZeroArea,
+  forEachBitFieldCell,
+  hasValidBitFieldLengths,
+  neighborsByBounds,
+  renderBaseCellVisual,
+  runChordReveal,
+  serializeBitFields,
+} = window.sharedMinesweeperUtils;
 let grid = [];
 let rows = 0;
 let cols = 0;
@@ -221,19 +232,17 @@ function createGrid() {
 }
 
 function calculateAdjacents() {
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      if (grid[r][c].mine) {
-        grid[r][c].adjacent = 0;
-        continue;
-      }
-      let count = 0;
-      for (const [nr, nc] of neighbors(r, c)) {
-        if (grid[nr][nc].mine) count += 1;
-      }
-      grid[r][c].adjacent = count;
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    if (grid[r][c].mine) {
+      grid[r][c].adjacent = 0;
+      return;
     }
-  }
+    let count = 0;
+    for (const [nr, nc] of neighbors(r, c)) {
+      if (grid[nr][nc].mine) count += 1;
+    }
+    grid[r][c].adjacent = count;
+  });
 }
 
 function placeMines(safeR, safeC) {
@@ -466,24 +475,20 @@ function revealCell(r, c) {
 }
 
 function revealAllMines() {
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      if (!cell.mine || cell.flagged) continue;
-      cell.open = true;
-      applyCellVisual(cell);
-    }
-  }
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    const cell = grid[r][c];
+    if (!cell.mine || cell.flagged) return;
+    cell.open = true;
+    applyCellVisual(cell);
+  });
 }
 
 function refreshFlagsAfterLoss() {
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      if (!cell.flagged) continue;
-      applyCellVisual(cell);
-    }
-  }
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    const cell = grid[r][c];
+    if (!cell.flagged) return;
+    applyCellVisual(cell);
+  });
 }
 
 function countFlaggedNeighbors(r, c) {
@@ -494,18 +499,22 @@ function chordOpenCell(r, c) {
   const cell = grid[r][c];
   if (!cell.open || gameOver) return;
 
-  const flaggedAround = countFlaggedNeighbors(r, c);
-  if (flaggedAround !== cell.adjacent) return;
+  const result = runChordReveal([r, c], {
+    getCell: ([nr, nc]) => grid[nr][nc],
+    getNeighbors: ([nr, nc]) => neighbors(nr, nc),
+    isOpen: (current) => current.open,
+    isFlagged: (current) => current.flagged,
+    getRequiredCount: (current) => current.adjacent,
+    countFlaggedNeighbors: ([nr, nc]) => countFlaggedNeighbors(nr, nc),
+    revealNeighbor: ([nr, nc], neighbor) => {
+      const hitsMine = neighbor.mine;
+      revealCell(nr, nc);
+      return hitsMine;
+    },
+  });
+  if (!result.matched) return;
 
-  let hitMine = false;
-  for (const [nr, nc] of neighbors(r, c)) {
-    const neighbor = grid[nr][nc];
-    if (neighbor.open || neighbor.flagged) continue;
-    revealCell(nr, nc);
-    if (neighbor.mine) hitMine = true;
-  }
-
-  if (hitMine) {
+  if (result.hitMine) {
     gameOver = true;
     gameOutcome = "lose";
     stopTimer();
@@ -521,9 +530,7 @@ function chordOpenCell(r, c) {
 }
 
 function clearChordPreview() {
-  for (const cell of chordPreviewCells) {
-    cell.el.classList.remove("chord-preview");
-  }
+  removeClassFromTargets(chordPreviewCells, "chord-preview", (cell) => cell.el);
   chordPreviewCells = [];
 }
 
@@ -531,12 +538,16 @@ function showChordPreview(r, c) {
   clearChordPreview();
 
   if (gameOver) return;
-  const cell = grid[r][c];
-  if (!cell.open || cell.adjacent <= 0) return;
+  const previewCoords = collectChordPreviewCoords([r, c], {
+    getCell: ([nr, nc]) => grid[nr][nc],
+    getNeighbors: ([nr, nc]) => neighbors(nr, nc),
+    isOpen: (cell) => cell.open,
+    isFlagged: (cell) => cell.flagged,
+    getRequiredCount: (cell) => cell.adjacent,
+  });
 
-  for (const [nr, nc] of neighbors(r, c)) {
+  for (const [nr, nc] of previewCoords) {
     const neighbor = grid[nr][nc];
-    if (neighbor.open || neighbor.flagged) continue;
     neighbor.el.classList.add("chord-preview");
     chordPreviewCells.push(neighbor);
   }
@@ -553,39 +564,24 @@ function checkWin() {
   updateReplayButton();
 
   flagCount = 0;
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      if (cell.mine) {
-        cell.flagged = true;
-      }
-      if (cell.flagged) flagCount += 1;
-      applyCellVisual(cell);
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    const cell = grid[r][c];
+    if (cell.mine) {
+      cell.flagged = true;
     }
-  }
+    if (cell.flagged) flagCount += 1;
+    applyCellVisual(cell);
+  });
 
   updateCounters();
 }
 
 function serializeGrid() {
-  const mines = [];
-  const open = [];
-  const flags = [];
-
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      mines.push(cell.mine ? "1" : "0");
-      open.push(cell.open ? "1" : "0");
-      flags.push(cell.flagged ? "1" : "0");
-    }
-  }
-
-  return {
-    mines: mines.join(""),
-    open: open.join(""),
-    flags: flags.join(""),
-  };
+  return serializeBitFields(rows, cols, (r, c) => grid[r][c], {
+    mines: (cell) => cell.mine,
+    open: (cell) => cell.open,
+    flags: (cell) => cell.flagged,
+  });
 }
 
 function buildStatePayload() {
@@ -609,17 +605,7 @@ function buildStatePayload() {
 }
 
 function isValidSerializedState(saved, expectedRows, expectedCols) {
-  const size = Number(expectedRows) * Number(expectedCols);
-  return (
-    Number.isInteger(size) &&
-    size > 0 &&
-    typeof saved?.mines === "string" &&
-    typeof saved?.open === "string" &&
-    typeof saved?.flags === "string" &&
-    saved.mines.length === size &&
-    saved.open.length === size &&
-    saved.flags.length === size
-  );
+  return hasValidBitFieldLengths(saved, expectedRows, expectedCols, ["mines", "open", "flags"]);
 }
 
 function captureUndoState() {
@@ -694,26 +680,20 @@ function applyStateSnapshot(saved) {
   createGrid();
   renderBoard();
 
-  let index = 0;
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      cell.mine = saved.mines[index] === "1";
-      cell.open = saved.open[index] === "1";
-      cell.flagged = cell.open ? false : saved.flags[index] === "1";
-      if (cell.open && !cell.mine) openedCells += 1;
-      if (cell.flagged) flagCount += 1;
-      index += 1;
-    }
-  }
+  forEachBitFieldCell(rows, cols, { mines: saved.mines, open: saved.open, flags: saved.flags }, ({ r, c, bits }) => {
+    const cell = grid[r][c];
+    cell.mine = bits.mines === "1";
+    cell.open = bits.open === "1";
+    cell.flagged = cell.open ? false : bits.flags === "1";
+    if (cell.open && !cell.mine) openedCells += 1;
+    if (cell.flagged) flagCount += 1;
+  });
 
   if (started) calculateAdjacents();
 
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      applyCellVisual(grid[r][c]);
-    }
-  }
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    applyCellVisual(grid[r][c]);
+  });
 
   if (gameOutcome === "win") {
     setFace("win");
@@ -797,33 +777,27 @@ function restoreGameState() {
 
   openedCells = 0;
   flagCount = 0;
-  let index = 0;
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const cell = grid[r][c];
-      const mine = saved.mines[index] === "1";
-      const open = saved.open[index] === "1";
-      const flagged = saved.flags[index] === "1";
+  forEachBitFieldCell(rows, cols, { mines: saved.mines, open: saved.open, flags: saved.flags }, ({ r, c, bits }) => {
+    const cell = grid[r][c];
+    const mine = bits.mines === "1";
+    const open = bits.open === "1";
+    const flagged = bits.flags === "1";
 
-      cell.mine = mine;
-      cell.open = open;
-      cell.flagged = open ? false : flagged;
+    cell.mine = mine;
+    cell.open = open;
+    cell.flagged = open ? false : flagged;
 
-      if (cell.open && !cell.mine) openedCells += 1;
-      if (cell.flagged) flagCount += 1;
-      index += 1;
-    }
-  }
+    if (cell.open && !cell.mine) openedCells += 1;
+    if (cell.flagged) flagCount += 1;
+  });
 
   if (started) {
     calculateAdjacents();
   }
 
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      applyCellVisual(grid[r][c]);
-    }
-  }
+  forEachBoardCoord(rows, cols, ({ r, c }) => {
+    applyCellVisual(grid[r][c]);
+  });
 
   if (gameOutcome === "win") {
     setFace("win");

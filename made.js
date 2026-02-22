@@ -27,8 +27,20 @@ const boardInput = window.createBoardInputState({
   moveTolerance: LONG_PRESS_MOVE_TOLERANCE,
 });
 const { getCookie: readCookie, setCookie: writeCookie } = window.sharedCookies;
-const { countNeighborsMatching, floodRevealZeroArea, neighborsByBounds, renderBaseCellVisual, shuffleInPlace } =
-  window.sharedMinesweeperUtils;
+const {
+  countNeighborsMatching,
+  collectChordPreviewCoords,
+  collectCoordPairs,
+  coordListToKeySet,
+  forEachBoardCoord,
+  floodRevealZeroArea,
+  hasCoordListFields,
+  neighborsByBounds,
+  removeClassFromTargets,
+  renderBaseCellVisual,
+  runChordReveal,
+  shuffleInPlace,
+} = window.sharedMinesweeperUtils;
 let revealAllMines = false;
 let gameFinished = false;
 const debugShowMines = false;
@@ -158,12 +170,12 @@ for (const zone of textZones) {
 
 function loadOrCreateMineLayout() {
   const candidates = [];
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      if (bombExclusionKeys.has(key(c, r))) continue;
-      candidates.push([c, r]);
-    }
-  }
+  forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
+    const cc = c + 1;
+    const rr = r + 1;
+    if (bombExclusionKeys.has(key(cc, rr))) return;
+    candidates.push([cc, rr]);
+  });
 
   shuffleInPlace(candidates);
 
@@ -201,18 +213,18 @@ function buildState(reuseCurrentMineLayout = false) {
   historyStack.length = 0;
   if (!reuseCurrentMineLayout) loadOrCreateMineLayout();
 
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      state.set(key(c, r), {
-        c,
-        r,
-        mine: false,
-        count: 0,
-        open: false,
-        flagged: false,
-      });
-    }
-  }
+  forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
+    const cc = c + 1;
+    const rr = r + 1;
+    state.set(key(cc, rr), {
+      c: cc,
+      r: rr,
+      mine: false,
+      count: 0,
+      open: false,
+      flagged: false,
+    });
+  });
 
   for (const [c, r] of minePositions) {
     const cell = state.get(key(c, r));
@@ -226,17 +238,17 @@ function buildState(reuseCurrentMineLayout = false) {
     }
   }
 
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const cell = state.get(key(c, r));
-      if (!cell || cell.mine) continue;
-      let count = 0;
-      for (const [nc, nr] of neighbors(c, r)) {
-        if (state.get(key(nc, nr))?.mine) count += 1;
-      }
-      cell.count = count;
+  forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
+    const cc = c + 1;
+    const rr = r + 1;
+    const cell = state.get(key(cc, rr));
+    if (!cell || cell.mine) return;
+    let count = 0;
+    for (const [nc, nr] of neighbors(cc, rr)) {
+      if (state.get(key(nc, nr))?.mine) count += 1;
     }
-  }
+    cell.count = count;
+  });
 
   for (const zone of textZones) {
     if (!openReservedTextTilesAtStart && !zone.openAtStart) continue;
@@ -267,51 +279,35 @@ function snapshotState() {
   };
 }
 
-function serializeMadeStateCompact() {
-  let mines = "";
-  let open = "";
-  let flags = "";
-
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const cell = state.get(key(c, r));
-      mines += cell?.mine ? "1" : "0";
-      open += cell?.open ? "1" : "0";
-      flags += cell?.flagged ? "1" : "0";
-    }
-  }
-
+function buildMadeStatePayload() {
   return {
+    rows: boardRows,
+    cols: boardCols,
+    savedAt: Date.now(),
+    elapsed: 0,
     revealAllMines,
     gameFinished,
-    mines,
-    open,
-    flags,
+    mines: collectCoordPairs(state.values(), (cell) => cell.mine, (cell) => [cell.c, cell.r]),
+    open: collectCoordPairs(state.values(), (cell) => cell.open, (cell) => [cell.c, cell.r]),
+    flags: collectCoordPairs(state.values(), (cell) => cell.flagged, (cell) => [cell.c, cell.r]),
   };
 }
 
-function serializeSnapshotCompact(snapshot) {
+function buildUndoSnapshotPayload(snapshot) {
   if (!snapshot || !Array.isArray(snapshot.cells)) return null;
-
-  const openMap = new Map();
-  const flagMap = new Map();
+  const open = [];
+  const flags = [];
   for (const item of snapshot.cells) {
     if (!item) continue;
-    openMap.set(key(item.c, item.r), Boolean(item.open));
-    flagMap.set(key(item.c, item.r), Boolean(item.flagged));
-  }
-
-  let open = "";
-  let flags = "";
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const k = key(c, r);
-      open += openMap.get(k) ? "1" : "0";
-      flags += flagMap.get(k) ? "1" : "0";
-    }
+    if (item.open) open.push([item.c, item.r]);
+    if (item.flagged) flags.push([item.c, item.r]);
   }
 
   return {
+    rows: boardRows,
+    cols: boardCols,
+    savedAt: Date.now(),
+    elapsed: 0,
     revealAllMines: Boolean(snapshot.revealAllMines),
     gameFinished: Boolean(snapshot.gameFinished),
     open,
@@ -319,58 +315,56 @@ function serializeSnapshotCompact(snapshot) {
   };
 }
 
-function restoreSnapshotFromCompact(compact) {
+function restoreUndoSnapshotPayload(payload) {
   if (
-    !compact ||
-    typeof compact.open !== "string" ||
-    typeof compact.flags !== "string" ||
-    compact.open.length !== boardRows * boardCols ||
-    compact.flags.length !== boardRows * boardCols
+    !payload ||
+    Number(payload.rows ?? boardRows) !== boardRows ||
+    Number(payload.cols ?? boardCols) !== boardCols ||
+    !hasCoordListFields(payload, ["open", "flags"], boardCols, boardRows)
   ) {
     return null;
   }
 
+  const openKeys = coordListToKeySet(payload.open, key);
+  const flagKeys = coordListToKeySet(payload.flags, key);
+
   const cells = [];
-  let index = 0;
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const openBit = compact.open[index];
-      const flagBit = compact.flags[index];
-      if (!"01".includes(openBit) || !"01".includes(flagBit)) return null;
-      cells.push({
-        c,
-        r,
-        open: openBit === "1",
-        flagged: flagBit === "1",
-      });
-      index += 1;
-    }
-  }
+  forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
+    const cc = c + 1;
+    const rr = r + 1;
+    const k = key(cc, rr);
+    cells.push({
+      c: cc,
+      r: rr,
+      open: openKeys.has(k),
+      flagged: flagKeys.has(k),
+    });
+  });
 
   return {
-    revealAllMines: Boolean(compact.revealAllMines),
-    gameFinished: Boolean(compact.gameFinished),
+    revealAllMines: Boolean(payload.revealAllMines),
+    gameFinished: Boolean(payload.gameFinished),
     cells,
   };
 }
 
-function saveMadeGameState() {
+function saveGameState() {
   if (state.size === 0) return;
   const isLost = gameFinished && revealAllMines;
   const persistedUndo = isLost && historyStack.length > 0
-    ? serializeSnapshotCompact(historyStack[historyStack.length - 1])
+    ? buildUndoSnapshotPayload(historyStack[historyStack.length - 1])
     : null;
   const payload = {
-    v: 1,
+    v: 2,
     rows: boardRows,
     cols: boardCols,
-    data: serializeMadeStateCompact(),
+    data: buildMadeStatePayload(),
     undo: persistedUndo,
   };
   setCookie(MADE_COOKIE_STATE, JSON.stringify(payload));
 }
 
-function restoreMadeGameState() {
+function restoreGameState() {
   const raw = getCookie(MADE_COOKIE_STATE);
   if (!raw) return false;
 
@@ -383,59 +377,38 @@ function restoreMadeGameState() {
 
   if (
     !saved ||
-    saved.v !== 1 ||
+    saved.v !== 2 ||
     Number(saved.rows) !== boardRows ||
     Number(saved.cols) !== boardCols ||
-    !saved.data ||
-    typeof saved.data.mines !== "string" ||
-    typeof saved.data.open !== "string" ||
-    typeof saved.data.flags !== "string"
+    !saved.data
   ) {
     return false;
   }
 
-  const expectedCells = boardRows * boardCols;
-  if (
-    saved.data.mines.length !== expectedCells ||
-    saved.data.open.length !== expectedCells ||
-    saved.data.flags.length !== expectedCells
-  ) {
-    return false;
-  }
+  const isTextCoordData =
+    hasCoordListFields(saved.data, ["mines", "open", "flags"], boardCols, boardRows);
+  if (!isTextCoordData) return false;
 
   const restoredMinePositions = [];
-  let index = 0;
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const mineBit = saved.data.mines[index];
-      const openBit = saved.data.open[index];
-      const flagBit = saved.data.flags[index];
-      if (!"01".includes(mineBit) || !"01".includes(openBit) || !"01".includes(flagBit)) return false;
-      if (mineBit === "1") restoredMinePositions.push([c, r]);
-      index += 1;
-    }
-  }
+  const openKeys = new Set();
+  const flagKeys = new Set();
+
+  for (const pair of saved.data.mines) restoredMinePositions.push(pair);
+  for (const [c, r] of saved.data.open) openKeys.add(key(c, r));
+  for (const [c, r] of saved.data.flags) flagKeys.add(key(c, r));
 
   minePositions = restoredMinePositions;
   buildState(true);
   revealAllMines = Boolean(saved.data.revealAllMines);
   gameFinished = Boolean(saved.data.gameFinished);
-  index = 0;
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const cell = state.get(key(c, r));
-      if (!cell) {
-        index += 1;
-        continue;
-      }
-      cell.open = saved.data.open[index] === "1";
-      cell.flagged = saved.data.flags[index] === "1";
-      index += 1;
-    }
+  for (const cell of state.values()) {
+    const k = key(cell.c, cell.r);
+    cell.open = openKeys.has(k);
+    cell.flagged = flagKeys.has(k);
   }
   historyStack.length = 0;
   const isLost = gameFinished && revealAllMines;
-  const restoredUndo = isLost ? restoreSnapshotFromCompact(saved.undo) : null;
+  const restoredUndo = isLost ? restoreUndoSnapshotPayload(saved.undo) : null;
   if (restoredUndo) {
     historyStack.push(restoredUndo);
   }
@@ -464,6 +437,7 @@ function undoLastMove() {
   if (!snapshot) return;
   restoreSnapshot(snapshot);
   renderBoard();
+  saveGameState();
 }
 
 function resetGame() {
@@ -472,6 +446,7 @@ function resetGame() {
   autoRevealExtraSafeCells();
   autoFlagAroundOpenArea();
   renderBoard();
+  saveGameState();
 }
 
 function autoRevealTextZones() {
@@ -578,21 +553,21 @@ function createBoardDom() {
   madeBoardOverlays.innerHTML = "";
   allCells.length = 0;
 
-  for (let r = 1; r <= boardRows; r += 1) {
-    for (let c = 1; c <= boardCols; c += 1) {
-      const index = (r - 1) * boardCols + c;
-      const el = document.createElement("button");
-      el.type = "button";
-      el.className = "cell";
-      el.dataset.c = String(c);
-      el.dataset.r = String(r);
-      el.dataset.index = String(index);
-      el.setAttribute("role", "gridcell");
-      el.setAttribute("aria-label", `Cell ${index} (${c}, ${r})`);
-      madeBoard.append(el);
-      allCells.push(el);
-    }
-  }
+  forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
+    const cc = c + 1;
+    const rr = r + 1;
+    const index = r * boardCols + cc;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "cell";
+    el.dataset.c = String(cc);
+    el.dataset.r = String(rr);
+    el.dataset.index = String(index);
+    el.setAttribute("role", "gridcell");
+    el.setAttribute("aria-label", `Cell ${index} (${cc}, ${rr})`);
+    madeBoard.append(el);
+    allCells.push(el);
+  });
 
   for (const zone of textZones) {
     if (!zone.reserveOnly) {
@@ -797,21 +772,22 @@ function onBoardPointerUpOrCancel(event) {
 }
 
 function clearChordPreview() {
-  for (const el of chordPreviewCells) {
-    el.classList.remove("chord-preview");
-  }
+  removeClassFromTargets(chordPreviewCells, "chord-preview");
   chordPreviewCells.length = 0;
 }
 
 function showChordPreview(c, r) {
   clearChordPreview();
   if (gameFinished) return;
-  const cell = state.get(key(c, r));
-  if (!cell || !cell.open || cell.count <= 0) return;
+  const previewCoords = collectChordPreviewCoords([c, r], {
+    getCell: ([nc, nr]) => state.get(key(nc, nr)),
+    getNeighbors: ([nc, nr]) => neighbors(nc, nr),
+    isOpen: (cell) => cell.open,
+    isFlagged: (cell) => cell.flagged,
+    getRequiredCount: (cell) => cell.count,
+  });
 
-  for (const [nc, nr] of neighbors(c, r)) {
-    const next = state.get(key(nc, nr));
-    if (!next || next.open || next.flagged) continue;
+  for (const [nc, nr] of previewCoords) {
     const el = allCells.find((button) => Number(button.dataset.c) === nc && Number(button.dataset.r) === nr);
     if (!el) continue;
     el.classList.add("chord-preview");
@@ -821,27 +797,29 @@ function showChordPreview(c, r) {
 
 function chordOpenCell(c, r) {
   if (gameFinished) return;
-  const cell = state.get(key(c, r));
-  if (!cell || !cell.open || cell.count <= 0) return;
-  if (countFlaggedNeighbors(c, r) !== cell.count) return;
+  const result = runChordReveal([c, r], {
+    getCell: ([nc, nr]) => state.get(key(nc, nr)),
+    getNeighbors: ([nc, nr]) => neighbors(nc, nr),
+    isOpen: (current) => current.open,
+    isFlagged: (current) => current.flagged,
+    getRequiredCount: (current) => current.count,
+    countFlaggedNeighbors: ([nc, nr]) => countFlaggedNeighbors(nc, nr),
+    revealNeighbor: (_coord, next) => {
+      if (next.mine) {
+        next.open = true;
+        return true;
+      }
+      if (next.count === 0) {
+        revealZeros(next);
+      } else {
+        next.open = true;
+      }
+      return false;
+    },
+  });
+  if (!result.matched) return;
 
-  let hitMine = false;
-  for (const [nc, nr] of neighbors(c, r)) {
-    const next = state.get(key(nc, nr));
-    if (!next || next.open || next.flagged) continue;
-    if (next.mine) {
-      next.open = true;
-      hitMine = true;
-      continue;
-    }
-    if (next.count === 0) {
-      revealZeros(next);
-    } else {
-      next.open = true;
-    }
-  }
-
-  if (hitMine) {
+  if (result.hitMine) {
     gameFinished = true;
     revealAllBombs();
   } else {
@@ -850,6 +828,7 @@ function chordOpenCell(c, r) {
 
   clearChordPreview();
   renderBoard();
+  saveGameState();
 }
 
 function checkWin() {
@@ -880,6 +859,7 @@ function openCell(c, r) {
     gameFinished = true;
     revealAllBombs();
     renderBoard();
+    saveGameState();
     return;
   }
 
@@ -891,6 +871,7 @@ function openCell(c, r) {
 
   checkWin();
   renderBoard();
+  saveGameState();
 }
 
 function toggleFlag(c, r) {
@@ -900,6 +881,7 @@ function toggleFlag(c, r) {
   pushHistory();
   cell.flagged = !cell.flagged;
   renderBoard();
+  saveGameState();
 }
 
 function renderBoard() {
@@ -930,8 +912,6 @@ function renderBoard() {
   if (undoButton instanceof HTMLButtonElement) {
     undoButton.disabled = historyStack.length === 0;
   }
-
-  saveMadeGameState();
 }
 
 function setTheme(theme) {
@@ -995,13 +975,14 @@ for (const button of themeButtons) {
 }
 
 createBoardDom();
-if (!restoreMadeGameState()) {
+if (!restoreGameState()) {
   buildState();
   autoRevealTextZones();
   autoRevealExtraSafeCells();
   autoFlagAroundOpenArea();
 }
 renderBoard();
+saveGameState();
 requestAnimationFrame(updateMadeBoardMobileScale);
 
 if (madeBoard) {

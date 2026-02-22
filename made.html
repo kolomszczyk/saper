@@ -39,6 +39,105 @@
         </main>
       </div>
 
+      <div class="made-window-pan made-settings-window-pan">
+        <main class="window made-window made-settings-window" aria-label="Settings">
+          <div class="made-title-wrap">
+            <button type="button" class="digits made-title-display" aria-label="Settings title" disabled>
+              <span>SETTINGS</span>
+            </button>
+          </div>
+
+          <section class="board-shell made-settings-shell" aria-label="Settings options">
+            <form class="made-settings-form" action="#" method="get" onsubmit="return false;">
+              <div class="made-settings-layout">
+                <div class="made-settings-left-col">
+                  <div class="made-settings-pair">
+                    <div class="made-settings-row made-settings-field">
+                      <label for="map-width">Width</label>
+                      <input
+                        id="map-width"
+                        class="made-settings-digital-input"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        value="22"
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                    </div>
+
+                    <div class="made-settings-row made-settings-field">
+                      <label for="map-height">Height</label>
+                      <input
+                        id="map-height"
+                        class="made-settings-digital-input"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        value="14"
+                        autocomplete="off"
+                        spellcheck="false"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="made-settings-row made-settings-field made-settings-checkbox-field">
+                    <label for="custom-map">Custom map</label>
+                    <div class="made-settings-checkbox-display">
+                      <label class="made-settings-switch" for="custom-map" aria-label="Toggle custom map">
+                        <input id="custom-map" type="checkbox" checked />
+                        <span class="made-settings-switch-track" aria-hidden="true">
+                          <span class="made-settings-switch-label made-settings-switch-label-on">On</span>
+                          <span class="made-settings-switch-label made-settings-switch-label-off">Off</span>
+                          <span class="made-settings-switch-thumb"></span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="made-settings-right-col">
+                  <div class="made-settings-row made-settings-field made-settings-bombs-field">
+                    <label for="bomb-count">Bomb count</label>
+                    <input
+                      id="bomb-count"
+                      class="made-settings-digital-input"
+                      type="text"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      value="45"
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                  </div>
+
+                  <div class="made-settings-row made-settings-field made-settings-games-field">
+                    <label for="games-per-day">Games per day</label>
+                    <input
+                      id="games-per-day"
+                      class="made-settings-digital-input"
+                      type="text"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      value="3"
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="made-settings-actions">
+                <button type="button" class="theme-button made-settings-save">
+                  Save
+                </button>
+              </div>
+
+            </form>
+          </section>
+        </main>
+      </div>
+
       <section class="theme-picker made-theme-picker" aria-label="Theme selection">
         <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
           Dark
@@ -53,5 +152,6 @@
     <script src="shared-board-input.js"></script>
     <script src="shared-minesweeper-utils.js"></script>
     <script src="made.js"></script>
+    <script src="made-settings-mock.js"></script>
   </body>
 </html>

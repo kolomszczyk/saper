@@ -1,5 +1,6 @@
 .made-page {
   width: fit-content;
+  padding-bottom: 80px;
 }
 
 .top-actions {
@@ -30,6 +31,14 @@
   width: fit-content;
 }
 
+.made-settings-window-pan {
+  margin-top: 55px;
+}
+
+.made-settings-window {
+  width: auto;
+}
+
 .made-title-wrap {
   display: block;
   width: fit-content;
@@ -47,6 +56,11 @@
   min-width: 0;
   padding-inline: 10px;
   cursor: pointer;
+}
+
+.made-settings-window .made-title-display[disabled] {
+  cursor: default;
+  opacity: 1;
 }
 
 .made-title-display span {
@@ -72,6 +86,282 @@
   max-width: none;
   margin: 0 auto;
   overflow: visible;
+}
+
+.made-settings-shell {
+  --made-settings-cell-size: 24px;
+  width: calc((22 * var(--made-settings-cell-size)) + 18px);
+  max-width: 100%;
+  padding: 14px;
+}
+
+.made-settings-form {
+  display: block;
+  min-width: 0;
+}
+
+.made-settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 18px 22px;
+  align-items: end;
+}
+
+.made-settings-left-col,
+.made-settings-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.made-settings-right-col {
+  justify-content: center;
+  align-items: center;
+}
+
+.made-settings-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.made-settings-pair .made-settings-field {
+  align-items: center;
+  padding: 10px 2px 8px;
+  background: var(--mid);
+  border-top: 2px solid var(--dark);
+  border-left: 2px solid var(--dark);
+  border-right: 2px solid var(--light);
+  border-bottom: 2px solid var(--light);
+}
+
+.made-settings-pair .made-settings-field > label {
+  text-align: center;
+}
+
+.made-settings-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.made-settings-row > label,
+.made-settings-row > span {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--body-text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.made-settings-digital-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-family: "Digital-7", "DS-Digital", "Seven Segment", "Orbitron", "Courier New", monospace;
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0.16em;
+  color: var(--digit-red);
+  caret-color: transparent;
+  background-color: var(--digit-bg);
+  border-top: 2px solid var(--deep);
+  border-left: 2px solid var(--deep);
+  border-right: 2px solid var(--digits-frame);
+  border-bottom: 2px solid var(--digits-frame);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+}
+
+.made-settings-digital-input:focus,
+.made-settings-digital-input:focus-visible {
+  outline: none;
+  background-image: linear-gradient(var(--digit-red), var(--digit-red));
+  background-repeat: no-repeat;
+  background-size: 2px 62%;
+  background-position: calc(100% - 8px) 50%;
+}
+
+.made-settings-pair .made-settings-digital-input {
+  width: 5.2ch;
+  min-width: calc(5.2ch + 22px);
+}
+
+.made-settings-digital-input:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: var(--digit-red);
+  cursor: default;
+}
+
+.made-settings-left-col.is-custom-map-off .made-settings-pair .made-settings-digital-input {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  background-color: #050607;
+  background-image: none;
+}
+
+.made-settings-left-col.is-custom-map-off .made-settings-pair .made-settings-field > label {
+  opacity: 1;
+}
+
+.made-settings-digital-input::-webkit-outer-spin-button,
+.made-settings-digital-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.made-settings-digital-input {
+  -moz-appearance: textfield;
+}
+
+.made-settings-games-field {
+  margin-top: 0;
+  align-self: center;
+  width: 100%;
+  max-width: 150px;
+  align-items: center;
+}
+
+.made-settings-bombs-field {
+  margin-top: -40px;
+  align-self: center;
+  width: 100%;
+  max-width: 150px;
+  align-items: center;
+}
+
+.made-settings-games-field,
+.made-settings-bombs-field {
+  padding: 6px 5px 9px;
+  background: var(--mid);
+  border-top: 1px solid var(--dark);
+  border-left: 1px solid var(--dark);
+  border-right: 1px solid var(--light);
+  border-bottom: 1px solid var(--light);
+}
+
+.made-settings-games-field .made-settings-digital-input,
+.made-settings-bombs-field .made-settings-digital-input {
+  width: 5.2ch;
+  min-width: calc(5.2ch + 22px);
+  max-width: none;
+}
+
+.made-settings-games-field > label,
+.made-settings-bombs-field > label {
+  text-align: center;
+}
+
+.made-settings-checkbox-field {
+  max-width: 190px;
+  padding: 6px 5px 9px;
+  background: var(--mid);
+  border-top: 1px solid var(--dark);
+  border-left: 1px solid var(--dark);
+  border-right: 1px solid var(--light);
+  border-bottom: 1px solid var(--light);
+}
+
+.made-settings-checkbox-field > label {
+  width: 100%;
+  text-align: center;
+}
+
+.made-settings-checkbox-display {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+}
+
+.made-settings-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.made-settings-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.made-settings-switch-track {
+  position: relative;
+  width: 120px;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 2px;
+  background: var(--digit-bg);
+  border-top: 2px solid var(--deep);
+  border-left: 2px solid var(--deep);
+  border-right: 2px solid var(--digits-frame);
+  border-bottom: 2px solid var(--digits-frame);
+}
+
+.made-settings-switch-label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: color-mix(in srgb, var(--body-text) 55%, transparent);
+  text-transform: uppercase;
+}
+
+.made-settings-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: calc(100% - 4px);
+  background: var(--mid);
+  border-top: 2px solid var(--light);
+  border-left: 2px solid var(--light);
+  border-right: 2px solid var(--dark);
+  border-bottom: 2px solid var(--dark);
+  transition: transform 120ms ease;
+}
+
+.made-settings-switch input:checked + .made-settings-switch-track .made-settings-switch-thumb {
+  transform: translateX(0);
+}
+
+.made-settings-switch input:not(:checked) + .made-settings-switch-track .made-settings-switch-thumb {
+  transform: translateX(calc(100% + 0px));
+}
+
+.made-settings-switch input:checked + .made-settings-switch-track .made-settings-switch-label-on,
+.made-settings-switch input:not(:checked) + .made-settings-switch-track .made-settings-switch-label-off {
+  color: var(--body-text);
+}
+
+.made-settings-switch input:focus-visible + .made-settings-switch-track {
+  outline: 2px solid var(--picker-focus);
+  outline-offset: 2px;
+}
+
+.made-settings-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.made-settings-save {
+  min-width: 118px;
 }
 
 .made-board-zoom {
@@ -354,6 +644,14 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .made-settings-window-pan {
+    margin-top: 45px;
+  }
+
+  .made-page {
+    padding-bottom: 70px;
+  }
+
   .back-button {
     min-width: 148px;
     min-height: 42px;
@@ -416,6 +714,14 @@
     margin-bottom: 18px;
   }
 
+  .made-settings-window-pan {
+    margin-top: 35px;
+  }
+
+  .made-page {
+    padding-bottom: 55px;
+  }
+
   .made-title-wrap {
     margin-bottom: 8px;
     padding: 6px;
@@ -432,6 +738,82 @@
   .made-board-shell {
     max-width: calc(100vw - 20px);
     padding: 4px;
+  }
+
+  .made-settings-shell {
+    --made-settings-cell-size: 22px;
+    width: calc(100vw - 20px);
+    padding: 10px;
+  }
+
+  .made-settings-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .made-settings-left-col,
+  .made-settings-right-col {
+    gap: 12px;
+  }
+
+  .made-settings-pair {
+    gap: 10px;
+  }
+
+  .made-settings-pair .made-settings-field {
+    padding: 8px 2px 6px;
+  }
+
+  .made-settings-row > label,
+  .made-settings-row > span {
+    font-size: 13px;
+  }
+
+  .made-settings-digital-input {
+    min-height: 38px;
+    font-size: 22px;
+  }
+
+  .made-settings-games-field {
+    margin-top: 0;
+    max-width: 150px;
+    align-items: flex-start;
+  }
+
+  .made-settings-bombs-field {
+    max-width: 150px;
+    align-items: flex-start;
+  }
+
+  .made-settings-games-field,
+  .made-settings-bombs-field {
+    padding: 5px 5px 8px;
+  }
+
+  .made-settings-games-field > label,
+  .made-settings-bombs-field > label {
+    text-align: left;
+  }
+
+  .made-settings-games-field .made-settings-digital-input,
+  .made-settings-bombs-field .made-settings-digital-input {
+    width: 5.2ch;
+    min-width: calc(5.2ch + 22px);
+    max-width: none;
+  }
+
+  .made-settings-checkbox-display {
+    min-height: 48px;
+    padding: 8px 6px;
+  }
+
+  .made-settings-checkbox-field {
+    padding: 5px 5px 8px;
+  }
+
+  .made-settings-actions {
+    margin-top: 22px;
   }
 
   .made-board-overlay {
@@ -464,12 +846,6 @@
     margin-top: 18px;
     gap: 8px;
   }
-
-  .made-theme-picker .theme-button {
-    width: 84px;
-    height: 40px;
-    font-size: 13px;
-  }
 }
 
 @media (max-width: 400px) {
@@ -480,6 +856,10 @@
 
   .made-board-stack {
     --made-cell-size: 20px;
+  }
+
+  .made-settings-shell {
+    --made-settings-cell-size: 20px;
   }
 
   .made-board-overlay {
