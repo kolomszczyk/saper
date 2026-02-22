@@ -7,12 +7,18 @@ const DIFFICULTIES = {
 const COOKIE_SETTINGS = "saper_settings";
 const COOKIE_STATE = "saper_state";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const THEMES = {
+  dark: true,
+  light: true,
+};
 
 const boardEl = document.getElementById("board");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
 const difficultyButtons = Array.from(document.querySelectorAll(".difficulty-button"));
+const themeEl = document.getElementById("theme");
+const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
@@ -72,7 +78,13 @@ function getCookie(name) {
 }
 
 function saveSettings() {
-  setCookie(COOKIE_SETTINGS, JSON.stringify({ difficulty: difficultyEl.value }));
+  setCookie(
+    COOKIE_SETTINGS,
+    JSON.stringify({
+      difficulty: difficultyEl.value,
+      theme: themeEl?.value ?? "dark",
+    }),
+  );
 }
 
 function syncDifficultyButtons() {
@@ -83,6 +95,20 @@ function syncDifficultyButtons() {
   }
 }
 
+function syncThemeButtons() {
+  if (!themeEl) return;
+  for (const btn of themeButtons) {
+    const isActive = btn.dataset.theme === themeEl.value;
+    btn.classList.toggle("is-active", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  }
+}
+
+function applyThemeSelection() {
+  if (!themeEl) return;
+  document.documentElement.dataset.theme = themeEl.value;
+}
+
 function loadSettings() {
   const raw = getCookie(COOKIE_SETTINGS);
   if (!raw) return;
@@ -91,6 +117,11 @@ function loadSettings() {
     if (parsed && typeof parsed.difficulty === "string" && DIFFICULTIES[parsed.difficulty]) {
       difficultyEl.value = parsed.difficulty;
       syncDifficultyButtons();
+    }
+    if (parsed && typeof parsed.theme === "string" && THEMES[parsed.theme]) {
+      themeEl.value = parsed.theme;
+      syncThemeButtons();
+      applyThemeSelection();
     }
   } catch {
     // Ignore invalid cookie payload.
@@ -691,8 +722,20 @@ for (const btn of difficultyButtons) {
     newGame();
   });
 }
+for (const btn of themeButtons) {
+  btn.addEventListener("click", () => {
+    const nextTheme = btn.dataset.theme;
+    if (!nextTheme || !THEMES[nextTheme] || !themeEl) return;
+    themeEl.value = nextTheme;
+    syncThemeButtons();
+    applyThemeSelection();
+    saveSettings();
+  });
+}
 
 loadSettings();
+syncThemeButtons();
+applyThemeSelection();
 if (!restoreGameState()) {
   newGame();
 }

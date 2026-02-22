@@ -12,6 +12,7 @@
 
       <main class="window" aria-label="Saper">
         <input id="difficulty" type="hidden" value="medium" />
+        <input id="theme" type="hidden" value="dark" />
 
         <section class="scorebar" aria-label="Status gry">
           <div class="digits" aria-label="Licznik min"><span id="mine-counter">000</span></div>
@@ -37,6 +38,15 @@
         </button>
         <button type="button" class="difficulty-button" data-difficulty="hard" aria-pressed="false">
           Hard
+        </button>
+      </section>
+
+      <section class="theme-picker" aria-label="Wybór motywu">
+        <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
+          Ciemny
+        </button>
+        <button type="button" class="theme-button" data-theme="light" aria-pressed="false">
+          Biały
         </button>
       </section>
 
