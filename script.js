@@ -25,12 +25,8 @@ const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
-const LONG_PRESS_MS = 420;
+const LONG_PRESS_MS = 250;
 const LONG_PRESS_MOVE_TOLERANCE = 4;
-document.documentElement.style.setProperty("--flag-url", `url(\"./flag.svg?v=${Date.now()}\")`);
-document.documentElement.style.setProperty("--bomb-url", `url(\"./bomb.svg?v=${Date.now()}\")`);
-document.documentElement.style.setProperty("--cross-url", `url(\"./cross.svg?v=${Date.now()}\")`);
-
 let grid = [];
 let rows = 0;
 let cols = 0;
@@ -175,12 +171,21 @@ function stopTimer() {
 }
 
 function startTimer() {
-  if (timerId) return;
+  if (timerId || !started || gameOver || document.hidden) return;
   timerId = setInterval(() => {
-    elapsed = Math.min(elapsed + 1, 999);
+    elapsed = (elapsed + 1) % 1000;
     updateCounters();
     saveGameState();
   }, 1000);
+}
+
+function syncTimerWithPageVisibility() {
+  if (document.hidden) {
+    stopTimer();
+    saveGameState();
+    return;
+  }
+  startTimer();
 }
 
 function makeEmptyCell() {
@@ -313,7 +318,14 @@ function triggerLongPressFlag(r, c) {
 }
 
 function onCellPointerDown(event, r, c) {
-  if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (
+    event.pointerType !== "touch" &&
+    event.pointerType !== "pen" &&
+    event.pointerType !== "mouse"
+  ) {
+    return;
+  }
+  if (event.pointerType === "mouse" && event.button !== 0) return;
   if (!event.isPrimary) return;
   cancelLongPress();
   longPressPointerId = event.pointerId;
@@ -929,6 +941,7 @@ function newGame() {
 }
 
 window.addEventListener("mouseup", clearChordPreview);
+document.addEventListener("visibilitychange", syncTimerWithPageVisibility);
 boardShellEl?.addEventListener("scroll", cancelLongPress, { passive: true });
 window.addEventListener("resize", () => {
   requestAnimationFrame(updateBoardMobileScale);
