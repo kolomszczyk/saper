@@ -12,6 +12,7 @@ const boardEl = document.getElementById("board");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
+const difficultyButtons = Array.from(document.querySelectorAll(".difficulty-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
@@ -74,6 +75,14 @@ function saveSettings() {
   setCookie(COOKIE_SETTINGS, JSON.stringify({ difficulty: difficultyEl.value }));
 }
 
+function syncDifficultyButtons() {
+  for (const btn of difficultyButtons) {
+    const isActive = btn.dataset.difficulty === difficultyEl.value;
+    btn.classList.toggle("is-active", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  }
+}
+
 function loadSettings() {
   const raw = getCookie(COOKIE_SETTINGS);
   if (!raw) return;
@@ -81,6 +90,7 @@ function loadSettings() {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed.difficulty === "string" && DIFFICULTIES[parsed.difficulty]) {
       difficultyEl.value = parsed.difficulty;
+      syncDifficultyButtons();
     }
   } catch {
     // Ignore invalid cookie payload.
@@ -523,6 +533,7 @@ function restoreGameState() {
   }
 
   difficultyEl.value = saved.difficulty;
+  syncDifficultyButtons();
   rows = config.rows;
   cols = config.cols;
   mineCount = config.mines;
@@ -645,6 +656,7 @@ function onRightClick(r, c) {
 }
 
 function newGame() {
+  syncDifficultyButtons();
   const config = DIFFICULTIES[difficultyEl.value] ?? DIFFICULTIES.medium;
   rows = config.rows;
   cols = config.cols;
@@ -670,7 +682,15 @@ function newGame() {
 window.addEventListener("mouseup", clearChordPreview);
 newGameEl.addEventListener("click", newGame);
 replayEl.addEventListener("click", undoLoss);
-difficultyEl.addEventListener("change", newGame);
+for (const btn of difficultyButtons) {
+  btn.addEventListener("click", () => {
+    const nextDifficulty = btn.dataset.difficulty;
+    if (!nextDifficulty || !DIFFICULTIES[nextDifficulty]) return;
+    difficultyEl.value = nextDifficulty;
+    syncDifficultyButtons();
+    newGame();
+  });
+}
 
 loadSettings();
 if (!restoreGameState()) {

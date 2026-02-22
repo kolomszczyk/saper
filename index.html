@@ -9,14 +9,7 @@
   <body>
     <div class="page">
       <main class="window" aria-label="Saper">
-        <section class="controls" aria-label="Ustawienia gry">
-          <label for="difficulty">Poziom:</label>
-          <select id="difficulty">
-            <option value="easy">Latwy (9x9, 10 min)</option>
-            <option value="medium" selected>Sredni (16x16, 40 min)</option>
-            <option value="hard">Trudny (16x30, 99 min)</option>
-          </select>
-        </section>
+        <input id="difficulty" type="hidden" value="medium" />
 
         <section class="scorebar" aria-label="Status gry">
           <div class="digits" aria-label="Licznik min"><span id="mine-counter">000</span></div>
@@ -32,6 +25,18 @@
           <button id="replay-game" type="button" class="replay-button" disabled>Cofnij</button>
         </div>
       </main>
+
+      <section class="difficulty-picker" aria-label="Game difficulty">
+        <button type="button" class="difficulty-button" data-difficulty="easy" aria-pressed="false">
+          Easy
+        </button>
+        <button type="button" class="difficulty-button is-active" data-difficulty="medium" aria-pressed="true">
+          Medium
+        </button>
+        <button type="button" class="difficulty-button" data-difficulty="hard" aria-pressed="false">
+          Hard
+        </button>
+      </section>
 
     </div>
 
