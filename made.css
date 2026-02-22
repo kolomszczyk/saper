@@ -1,0 +1,506 @@
+.made-page {
+  width: fit-content;
+}
+
+.top-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 26px;
+}
+
+.back-button {
+  min-width: 164px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.made-window {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: auto;
+  max-width: none;
+  margin-left: 0;
+  font-family: var(--ui-font);
+}
+
+.made-window-pan {
+  width: fit-content;
+}
+
+.made-title-wrap {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 10px;
+  padding: 8px;
+  background: var(--mid);
+  border-top: 3px solid var(--dark);
+  border-left: 3px solid var(--dark);
+  border-right: 3px solid var(--light);
+  border-bottom: 3px solid var(--light);
+}
+
+.made-title-display {
+  width: fit-content;
+  min-width: 0;
+  padding-inline: 10px;
+  cursor: pointer;
+}
+
+.made-title-display span {
+  letter-spacing: 3px;
+}
+
+.made-title-display:active {
+  border-top-color: var(--digits-frame);
+  border-left-color: var(--digits-frame);
+  border-right-color: var(--deep);
+  border-bottom-color: var(--deep);
+}
+
+.made-title-display:focus-visible {
+  outline: 2px solid var(--picker-focus);
+  outline-offset: 3px;
+}
+
+.made-board-shell {
+  display: inline-block;
+  padding: 6px;
+  width: max-content;
+  max-width: none;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.made-board-zoom {
+  width: fit-content;
+  height: fit-content;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.made-board-zoom > .made-board-stack {
+  transform-origin: top left;
+  transform: scale(var(--made-board-scale, 1));
+}
+
+.made-board-stack {
+  --made-cell-size: 24px;
+  position: relative;
+  width: fit-content;
+}
+
+.made-board {
+  grid-template-columns: repeat(22, var(--made-cell-size));
+  grid-auto-rows: var(--made-cell-size);
+}
+
+.made-board-overlays {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(22, var(--made-cell-size));
+  grid-auto-rows: var(--made-cell-size);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.made-board .cell {
+  cursor: pointer;
+  position: relative;
+  width: var(--made-cell-size);
+  height: var(--made-cell-size);
+}
+
+.made-board .cell::before {
+  content: attr(data-index);
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(235, 241, 247, 0.8);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: 4;
+  display: none;
+}
+
+.made-board .cell.open {
+  font-size: 16px;
+  cursor: default;
+}
+
+.made-board .cell.is-text-reserved.open {
+  background: #05070b;
+}
+
+:root[data-theme="light"] .made-board .cell.is-text-reserved.open {
+  background: var(--cell-open-bg);
+}
+
+.made-board .cell.debug-mine {
+  position: relative;
+}
+
+.made-board .cell.debug-mine::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 8px rgba(255, 59, 59, 0.5);
+  inset: 0;
+  margin: auto;
+  pointer-events: none;
+}
+
+.made-board-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: stretch;
+  align-self: center;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  padding: 0 0 0 4px;
+  font-family: var(--ui-font);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--body-text);
+  line-height: 1;
+  text-align: left;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.made-board-overlay.is-text-outline {
+  font-family: "Digital-7", "DS-Digital", "Seven Segment", "Orbitron", "Courier New", monospace;
+  font-weight: 900;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: var(--digit-red);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+}
+
+:root[data-theme="light"] .made-board-overlay.is-text-outline {
+  color: var(--digit-red);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+}
+
+:root[data-theme="dark"] .made-board-overlay.is-text-outline {
+  color: var(--digit-red);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+}
+
+.made-board-overlay.is-logo {
+  justify-content: center;
+  padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.made-board-overlay.is-logo.is-clickable a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.made-board-overlay.is-logo.is-clickable a:hover {
+  transform: scale(1.06);
+  background: rgba(255, 71, 71, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.35), 0 0 10px rgba(255, 35, 35, 0.22);
+}
+
+.made-board-overlay.is-logo.is-clickable a:focus-visible {
+  outline: 2px solid var(--picker-focus);
+  outline-offset: 2px;
+  background: rgba(255, 71, 71, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.35), 0 0 10px rgba(255, 35, 35, 0.22);
+}
+
+.made-board-overlay.is-logo svg {
+  width: 34px;
+  height: 34px;
+  display: block;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  fill: #000000;
+  filter:
+    drop-shadow(1px 0 0 var(--digit-red))
+    drop-shadow(-1px 0 0 var(--digit-red))
+    drop-shadow(0 1px 0 var(--digit-red))
+    drop-shadow(0 -1px 0 var(--digit-red));
+}
+
+.made-board-overlay.is-logo.is-repo-logo svg {
+  width: 60px;
+  height: 60px;
+  filter: none;
+}
+
+:root[data-theme="light"] .made-board-overlay.is-logo svg {
+  fill: #000000;
+  filter:
+    drop-shadow(1px 0 0 var(--digit-red))
+    drop-shadow(-1px 0 0 var(--digit-red))
+    drop-shadow(0 1px 0 var(--digit-red))
+    drop-shadow(0 -1px 0 var(--digit-red));
+}
+
+.made-board-overlay.is-link {
+  color: var(--picker-focus);
+}
+
+.made-board-overlay.is-link a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.made-board-overlay.is-link a:hover,
+.made-board-overlay.is-link a:focus-visible {
+  text-decoration: underline;
+}
+
+.made-board-overlay.is-text-clickable {
+  pointer-events: auto;
+}
+
+.made-board-overlay.is-text-clickable a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 4px;
+  transition:
+    transform 120ms ease,
+    text-shadow 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+.made-board-overlay.is-text-clickable a:hover {
+  transform: scale(1.04);
+  background: rgba(255, 71, 71, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.25);
+  text-shadow: 0 0 2px #ff1c1c, 0 0 10px rgba(255, 35, 35, 0.7);
+}
+
+.made-board-overlay.is-text-clickable a:focus-visible {
+  outline: 2px solid var(--picker-focus);
+  outline-offset: 2px;
+  background: rgba(255, 71, 71, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 71, 71, 0.25);
+}
+
+.made-theme-picker {
+  margin-top: 26px;
+}
+
+.made-undo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.made-undo {
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.made-undo:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 900px) and (hover: none), (max-width: 900px) and (pointer: coarse) {
+  .made-page {
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    overflow-x: visible;
+  }
+
+  .made-window-pan {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    padding-inline: 5px;
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .back-button {
+    min-width: 148px;
+    min-height: 42px;
+  }
+
+  .made-window {
+    width: fit-content;
+    max-width: none;
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .made-board-shell {
+    display: inline-block;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .made-board-zoom {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 901px), (hover: hover) and (pointer: fine) {
+  .made-page {
+    width: fit-content;
+    align-items: center;
+  }
+
+  .made-window {
+    width: auto;
+    max-width: none;
+    display: inline-flex;
+  }
+
+  .made-board-shell {
+    display: inline-block;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+  }
+
+  .made-board-zoom {
+    width: fit-content !important;
+    height: fit-content !important;
+    margin: 0 auto;
+  }
+
+  .made-board-zoom > .made-board-stack {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .top-actions {
+    margin-bottom: 18px;
+  }
+
+  .made-title-wrap {
+    margin-bottom: 8px;
+    padding: 6px;
+  }
+
+  .made-title-display {
+    padding-inline: 8px;
+  }
+
+  .made-board-stack {
+    --made-cell-size: 22px;
+  }
+
+  .made-board-shell {
+    max-width: calc(100vw - 20px);
+    padding: 4px;
+  }
+
+  .made-board-overlay {
+    font-size: 14px;
+  }
+
+  .made-board-overlay.is-text-outline {
+    font-size: 18px;
+    font-weight: 900;
+    -webkit-text-stroke: 0.35px rgba(255, 28, 28, 0.95);
+    text-shadow:
+      0 0 1px #ff1c1c,
+      0 0 2px #ff1c1c,
+      1px 0 0 rgba(255, 28, 28, 0.7),
+      -1px 0 0 rgba(255, 28, 28, 0.7),
+      0 0 8px rgba(255, 35, 35, 0.55),
+      0 0 12px rgba(255, 35, 35, 0.3);
+  }
+
+  .made-board-overlay.is-logo svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .made-undo-wrap {
+    margin-top: 8px;
+  }
+
+  .made-theme-picker {
+    margin-top: 18px;
+    gap: 8px;
+  }
+
+  .made-theme-picker .theme-button {
+    width: 84px;
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 400px) {
+  .back-button {
+    min-width: 136px;
+    font-size: 13px;
+  }
+
+  .made-board-stack {
+    --made-cell-size: 20px;
+  }
+
+  .made-board-overlay {
+    font-size: 12px;
+  }
+
+  .made-board-overlay.is-text-outline {
+    font-size: 16px;
+    font-weight: 900;
+    -webkit-text-stroke: 0.35px rgba(255, 28, 28, 0.95);
+    text-shadow:
+      0 0 1px #ff1c1c,
+      0 0 2px #ff1c1c,
+      1px 0 0 rgba(255, 28, 28, 0.7),
+      -1px 0 0 rgba(255, 28, 28, 0.7),
+      0 0 8px rgba(255, 35, 35, 0.55),
+      0 0 12px rgba(255, 35, 35, 0.3);
+  }
+
+  .made-board-overlay.is-logo svg {
+    width: 24px;
+    height: 24px;
+  }
+}

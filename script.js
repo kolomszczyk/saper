@@ -28,6 +28,13 @@ const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
 const LONG_PRESS_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE = 4;
+const boardInput = window.createBoardInputState({
+  longPressMs: LONG_PRESS_MS,
+  moveTolerance: LONG_PRESS_MOVE_TOLERANCE,
+});
+const { getCookie: readCookie, setCookie: writeCookie } = window.sharedCookies;
+const { countNeighborsMatching, floodRevealZeroArea, neighborsByBounds, renderBaseCellVisual } =
+  window.sharedMinesweeperUtils;
 let grid = [];
 let rows = 0;
 let cols = 0;
@@ -41,17 +48,6 @@ let elapsed = 0;
 let timerId = null;
 let chordPreviewCells = [];
 let undoState = null;
-let longPressTimerId = null;
-let longPressPointerId = null;
-let longPressStartX = 0;
-let longPressStartY = 0;
-let longPressRow = -1;
-let longPressCol = -1;
-let longPressTriggered = false;
-let suppressClickKey = "";
-let suppressClickExpiresAt = 0;
-let suppressContextMenuKey = "";
-let suppressContextMenuExpiresAt = 0;
 
 function parsePositiveInt(value) {
   const n = Number(value);
@@ -100,36 +96,19 @@ function inBounds(r, c) {
 }
 
 function neighbors(r, c) {
-  const list = [];
-  for (let dr = -1; dr <= 1; dr += 1) {
-    for (let dc = -1; dc <= 1; dc += 1) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr;
-      const nc = c + dc;
-      if (inBounds(nr, nc)) list.push([nr, nc]);
-    }
-  }
-  return list;
+  return neighborsByBounds(r, c, inBounds);
 }
 
 function setCookie(name, value, maxAge = COOKIE_MAX_AGE) {
-  document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+  writeCookie(name, value, maxAge);
 }
 
 function getCookie(name) {
-  const prefix = `${name}=`;
-  const parts = document.cookie ? document.cookie.split(";") : [];
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (trimmed.startsWith(prefix)) {
-      return decodeURIComponent(trimmed.slice(prefix.length));
-    }
-  }
-  return "";
+  return readCookie(name);
 }
 
 function clearCookie(name) {
-  setCookie(name, "", 0);
+  window.sharedCookies.clearCookie(name);
 }
 
 function saveSettings() {
@@ -277,28 +256,13 @@ function placeMines(safeR, safeC) {
 }
 
 function applyCellVisual(cell) {
-  cell.el.className = "cell";
-  cell.el.textContent = "";
-
-  if (cell.open) {
-    cell.el.classList.add("open");
-    if (cell.mine) {
-      cell.el.classList.add("mine");
-      return;
-    }
-    if (cell.adjacent > 0) {
-      cell.el.textContent = String(cell.adjacent);
-      cell.el.classList.add(`n${cell.adjacent}`);
-    }
-    return;
-  }
-
-  if (cell.flagged) {
-    cell.el.classList.add("flagged");
-    if (!cell.mine && gameOutcome === "lose") {
-      cell.el.classList.add("wrong-flag");
-    }
-  }
+  renderBaseCellVisual(cell.el, {
+    isOpen: cell.open,
+    isFlagged: cell.flagged,
+    showMine: cell.open && cell.mine,
+    count: cell.adjacent,
+    wrongFlag: cell.flagged && !cell.mine && gameOutcome === "lose",
+  });
 }
 
 function cellKey(r, c) {
@@ -306,52 +270,18 @@ function cellKey(r, c) {
 }
 
 function consumeSuppressedClick(r, c) {
-  if (suppressClickExpiresAt && performance.now() > suppressClickExpiresAt) {
-    suppressClickKey = "";
-    suppressClickExpiresAt = 0;
-  }
-  const key = cellKey(r, c);
-  if (suppressClickKey !== key) return false;
-  suppressClickKey = "";
-  suppressClickExpiresAt = 0;
-  return true;
+  return boardInput.consumeSuppressedClick(cellKey(r, c));
 }
 
 function shouldSuppressContextMenu(r, c) {
-  if (suppressContextMenuExpiresAt && performance.now() > suppressContextMenuExpiresAt) {
-    suppressContextMenuKey = "";
-    suppressContextMenuExpiresAt = 0;
-  }
-  const key = cellKey(r, c);
-  if (suppressContextMenuKey !== key) return false;
-  suppressContextMenuKey = "";
-  suppressContextMenuExpiresAt = 0;
-  return true;
-}
-
-function clearLongPressState() {
-  if (longPressTimerId) {
-    clearTimeout(longPressTimerId);
-    longPressTimerId = null;
-  }
-  longPressPointerId = null;
-  longPressRow = -1;
-  longPressCol = -1;
+  return boardInput.consumeSuppressedContextMenu(cellKey(r, c));
 }
 
 function cancelLongPress() {
-  clearLongPressState();
-  longPressTriggered = false;
+  boardInput.cancelLongPress();
 }
 
 function triggerLongPressFlag(r, c) {
-  longPressTimerId = null;
-  longPressTriggered = true;
-  const key = cellKey(r, c);
-  suppressClickKey = key;
-  suppressClickExpiresAt = performance.now() + 1200;
-  suppressContextMenuKey = key;
-  suppressContextMenuExpiresAt = performance.now() + 1200;
   clearChordPreview();
   onRightClick(r, c);
 }
@@ -364,31 +294,18 @@ function onCellPointerDown(event, r, c) {
   ) {
     return;
   }
-  if (event.pointerType === "mouse") {
-    // Mouse already uses mousedown/up for chord preview; keep preview visible while holding.
+  if (event.pointerType === "mouse" && event.button !== 0) {
     return;
   }
   if (!event.isPrimary) return;
-  cancelLongPress();
-  longPressPointerId = event.pointerId;
-  longPressRow = r;
-  longPressCol = c;
-  longPressStartX = event.clientX;
-  longPressStartY = event.clientY;
-  longPressTimerId = setTimeout(() => {
-    if (longPressPointerId !== event.pointerId) return;
+  boardInput.startLongPress(event, cellKey(r, c), () => {
     triggerLongPressFlag(r, c);
-  }, LONG_PRESS_MS);
+  });
 }
 
 function onCellPointerMove(event) {
   if (!event.isPrimary) return;
-  if (event.pointerId !== longPressPointerId || !longPressTimerId) return;
-  const movedX = Math.abs(event.clientX - longPressStartX);
-  const movedY = Math.abs(event.clientY - longPressStartY);
-  if (movedX > LONG_PRESS_MOVE_TOLERANCE || movedY > LONG_PRESS_MOVE_TOLERANCE) {
-    cancelLongPress();
-  }
+  boardInput.updateLongPressMove(event);
 }
 
 function onCellTouchStart(event) {
@@ -404,14 +321,9 @@ function onCellTouchMove() {
 
 function onCellPointerUpOrCancel(event, r, c) {
   if (!event.isPrimary) return;
-  if (event.pointerId !== longPressPointerId) return;
-  const wasLongPress = longPressTriggered && longPressRow === r && longPressCol === c;
-  clearLongPressState();
-  if (!wasLongPress) {
-    longPressTriggered = false;
-    return;
-  }
-  longPressTriggered = false;
+  const result = boardInput.endLongPress({ pointerId: event.pointerId, key: cellKey(r, c) });
+  if (!result) return;
+  if (!result.wasLongPress) return;
   if (event.cancelable) {
     event.preventDefault();
   }
@@ -524,17 +436,33 @@ function revealCell(r, c) {
   const cell = grid[r][c];
   if (cell.open || cell.flagged) return;
 
-  cell.open = true;
-  applyCellVisual(cell);
-
-  if (cell.mine) return;
-
-  openedCells += 1;
-  if (cell.adjacent > 0) return;
-
-  for (const [nr, nc] of neighbors(r, c)) {
-    revealCell(nr, nc);
+  if (cell.mine) {
+    cell.open = true;
+    applyCellVisual(cell);
+    return;
   }
+
+  if (cell.adjacent > 0) {
+    cell.open = true;
+    applyCellVisual(cell);
+    openedCells += 1;
+    return;
+  }
+
+  floodRevealZeroArea([r, c], {
+    getKey: ([nr, nc]) => cellKey(nr, nc),
+    getNeighbors: ([nr, nc]) => neighbors(nr, nc),
+    getCell: ([nr, nc]) => grid[nr][nc],
+    isOpen: (current) => current.open,
+    isFlagged: (current) => current.flagged,
+    isMine: (current) => current.mine,
+    getCount: (current) => current.adjacent,
+    openCell: (current) => {
+      current.open = true;
+      applyCellVisual(current);
+      openedCells += 1;
+    },
+  });
 }
 
 function revealAllMines() {
@@ -559,11 +487,7 @@ function refreshFlagsAfterLoss() {
 }
 
 function countFlaggedNeighbors(r, c) {
-  let total = 0;
-  for (const [nr, nc] of neighbors(r, c)) {
-    if (grid[nr][nc].flagged) total += 1;
-  }
-  return total;
+  return countNeighborsMatching(neighbors(r, c), ([nr, nc]) => grid[nr][nc].flagged);
 }
 
 function chordOpenCell(r, c) {
@@ -608,10 +532,7 @@ function showChordPreview(r, c) {
 
   if (gameOver) return;
   const cell = grid[r][c];
-  if (!cell.open) return;
-
-  const flaggedAround = countFlaggedNeighbors(r, c);
-  if (flaggedAround === cell.adjacent) return;
+  if (!cell.open || cell.adjacent <= 0) return;
 
   for (const [nr, nc] of neighbors(r, c)) {
     const neighbor = grid[nr][nc];
