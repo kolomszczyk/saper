@@ -3,6 +3,7 @@ const DIFFICULTIES = {
   medium: { rows: 16, cols: 16, mines: 40 },
   hard: { rows: 16, cols: 30, mines: 99 },
 };
+const CUSTOM_DIFFICULTY_KEY = "custom";
 
 const COOKIE_SETTINGS = "saper_settings";
 const COOKIE_STATE = "saper_state";
@@ -52,6 +53,44 @@ let suppressClickExpiresAt = 0;
 let suppressContextMenuKey = "";
 let suppressContextMenuExpiresAt = 0;
 
+function parsePositiveInt(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function readCustomBoardConfig() {
+  const configHost =
+    document.querySelector("[data-board-rows][data-board-cols][data-board-mines]") ?? document.body;
+  const rows = parsePositiveInt(configHost?.dataset?.boardRows);
+  const cols = parsePositiveInt(configHost?.dataset?.boardCols);
+  const mines = parsePositiveInt(configHost?.dataset?.boardMines);
+
+  if (!rows || !cols || !mines) return null;
+  const cellCount = rows * cols;
+  if (mines >= cellCount) return null;
+
+  return { rows, cols, mines };
+}
+
+const customBoardConfig = readCustomBoardConfig();
+
+function getSelectedBoardConfig() {
+  if (customBoardConfig) return customBoardConfig;
+  return DIFFICULTIES[difficultyEl?.value] ?? DIFFICULTIES.medium;
+}
+
+function getPersistedDifficultyKey() {
+  return customBoardConfig ? CUSTOM_DIFFICULTY_KEY : (difficultyEl?.value ?? "medium");
+}
+
+function matchesBoardSignature(saved, expectedRows, expectedCols, expectedMines) {
+  return (
+    Number(saved?.rows) === expectedRows &&
+    Number(saved?.cols) === expectedCols &&
+    Number(saved?.mineCount) === expectedMines
+  );
+}
+
 function format3(n) {
   return String(n).padStart(3, "0").slice(-3);
 }
@@ -97,7 +136,7 @@ function saveSettings() {
   setCookie(
     COOKIE_SETTINGS,
     JSON.stringify({
-      difficulty: difficultyEl.value,
+      difficulty: difficultyEl?.value ?? "medium",
       theme: themeEl?.value ?? "dark",
     }),
   );
@@ -130,7 +169,7 @@ function loadSettings() {
   if (!raw) return;
   try {
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.difficulty === "string" && DIFFICULTIES[parsed.difficulty]) {
+    if (!customBoardConfig && parsed && typeof parsed.difficulty === "string" && DIFFICULTIES[parsed.difficulty]) {
       difficultyEl.value = parsed.difficulty;
       syncDifficultyButtons();
     }
@@ -629,7 +668,7 @@ function buildStatePayload() {
   const serialized = serializeGrid();
   return {
     v: 1,
-    difficulty: difficultyEl.value,
+    difficulty: getPersistedDifficultyKey(),
     rows,
     cols,
     mineCount,
@@ -684,10 +723,8 @@ function restoreUndoState(expectedDifficulty, expectedRows, expectedCols, expect
     if (
       !savedUndo ||
       savedUndo.v !== 1 ||
-      savedUndo.difficulty !== expectedDifficulty ||
-      Number(savedUndo.rows) !== expectedRows ||
-      Number(savedUndo.cols) !== expectedCols ||
-      Number(savedUndo.mineCount) !== expectedMines ||
+      (!customBoardConfig && savedUndo.difficulty !== expectedDifficulty) ||
+      !matchesBoardSignature(savedUndo, expectedRows, expectedCols, expectedMines) ||
       !isValidSerializedState(savedUndo, expectedRows, expectedCols)
     ) {
       return;
@@ -800,17 +837,23 @@ function restoreGameState() {
     return false;
   }
 
-  if (!saved || saved.v !== 1 || typeof saved.difficulty !== "string" || !DIFFICULTIES[saved.difficulty]) {
+  if (!saved || saved.v !== 1 || typeof saved.difficulty !== "string") {
     return false;
   }
 
-  const config = DIFFICULTIES[saved.difficulty];
-  if (!isValidSerializedState(saved, config.rows, config.cols)) {
+  const config = customBoardConfig ?? DIFFICULTIES[saved.difficulty];
+  if (!config) return false;
+  if (
+    !matchesBoardSignature(saved, config.rows, config.cols, config.mines) ||
+    !isValidSerializedState(saved, config.rows, config.cols)
+  ) {
     return false;
   }
 
-  difficultyEl.value = saved.difficulty;
-  syncDifficultyButtons();
+  if (!customBoardConfig && saved.difficulty in DIFFICULTIES) {
+    difficultyEl.value = saved.difficulty;
+    syncDifficultyButtons();
+  }
   rows = config.rows;
   cols = config.cols;
   mineCount = config.mines;
@@ -823,7 +866,7 @@ function restoreGameState() {
       : saved.messageClass === "win" || saved.messageClass === "lose"
         ? saved.messageClass
         : "idle";
-  restoreUndoState(saved.difficulty, config.rows, config.cols, config.mines);
+  restoreUndoState(customBoardConfig ? CUSTOM_DIFFICULTY_KEY : saved.difficulty, config.rows, config.cols, config.mines);
 
   createGrid();
   renderBoard();
@@ -935,7 +978,7 @@ function onRightClick(r, c) {
 
 function newGame() {
   syncDifficultyButtons();
-  const config = DIFFICULTIES[difficultyEl.value] ?? DIFFICULTIES.medium;
+  const config = getSelectedBoardConfig();
   rows = config.rows;
   cols = config.cols;
   mineCount = config.mines;
@@ -975,12 +1018,20 @@ newGameEl.addEventListener("click", newGame);
 replayEl.addEventListener("click", undoLoss);
 for (const btn of difficultyButtons) {
   btn.addEventListener("click", () => {
+    if (customBoardConfig) return;
     const nextDifficulty = btn.dataset.difficulty;
     if (!nextDifficulty || !DIFFICULTIES[nextDifficulty]) return;
     difficultyEl.value = nextDifficulty;
     syncDifficultyButtons();
     newGame();
   });
+}
+
+if (customBoardConfig) {
+  for (const btn of difficultyButtons) {
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+  }
 }
 for (const btn of themeButtons) {
   btn.addEventListener("click", () => {
