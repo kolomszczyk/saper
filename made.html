@@ -10,14 +10,13 @@
     <link rel="stylesheet" href="styles.css" />
     <style>
       .made-page {
-        width: min(760px, 100%);
-        align-items: stretch;
+        width: fit-content;
       }
 
       .top-actions {
         display: flex;
         justify-content: center;
-        margin-bottom: 12px;
+        margin-bottom: 26px;
       }
 
       .back-button {
@@ -29,9 +28,17 @@
       }
 
       .made-window {
-        width: 100%;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        width: auto;
+        max-width: none;
         margin-left: 0;
         font-family: var(--ui-font);
+      }
+
+      .made-window-pan {
+        width: fit-content;
       }
 
       .made-title-wrap {
@@ -70,9 +77,24 @@
       }
 
       .made-board-shell {
+        display: inline-block;
         padding: 6px;
-        width: fit-content;
+        width: max-content;
+        max-width: none;
         margin: 0 auto;
+        overflow: visible;
+      }
+
+      .made-board-zoom {
+        width: fit-content;
+        height: fit-content;
+        overflow: hidden;
+        margin: 0 auto;
+      }
+
+      .made-board-zoom > .made-board-stack {
+        transform-origin: top left;
+        transform: scale(var(--made-board-scale, 1));
       }
 
       .made-board-stack {
@@ -200,7 +222,7 @@
       }
 
       .made-theme-picker {
-        margin-top: 18px;
+        margin-top: 26px;
       }
 
       .made-undo-wrap {
@@ -220,13 +242,146 @@
         cursor: default;
       }
 
-      @media (max-width: 560px) {
+      @media (max-width: 900px) and (hover: none), (max-width: 900px) and (pointer: coarse) {
+        .made-page {
+          width: 100%;
+          max-width: 100%;
+          align-items: center;
+          overflow-x: visible;
+        }
+
+        .made-window-pan {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          overflow-x: auto;
+          padding-inline: 5px;
+          touch-action: pan-x pan-y pinch-zoom;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .back-button {
+          min-width: 148px;
+          min-height: 42px;
+        }
+
+        .made-window {
+          width: fit-content;
+          max-width: none;
+          display: inline-flex;
+          flex: 0 0 auto;
+        }
+
         .made-board-shell {
-          overflow: auto;
+          display: inline-block;
+          width: max-content;
+          max-width: none;
+          overflow: visible;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .made-board-zoom {
+          margin-left: auto;
+          margin-right: auto;
+        }
+      }
+
+      @media (min-width: 901px), (hover: hover) and (pointer: fine) {
+        .made-page {
+          width: fit-content;
+          align-items: center;
+        }
+
+        .made-window {
+          width: auto;
+          max-width: none;
+          display: inline-flex;
+        }
+
+        .made-board-shell {
+          display: inline-block;
+          width: max-content;
+          max-width: none;
+          overflow: visible;
+        }
+
+        .made-board-zoom {
+          width: fit-content !important;
+          height: fit-content !important;
+          margin: 0 auto;
+        }
+
+        .made-board-zoom > .made-board-stack {
+          transform: none !important;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .top-actions {
+          margin-bottom: 18px;
+        }
+
+        .made-title-wrap {
+          margin-bottom: 8px;
+          padding: 6px;
+        }
+
+        .made-title-display {
+          padding-inline: 8px;
+        }
+
+        .made-board-stack {
+          --made-cell-size: 22px;
+        }
+
+        .made-board-shell {
+          max-width: calc(100vw - 20px);
+          padding: 4px;
         }
 
         .made-board-overlay {
-          font-size: 16px;
+          font-size: 14px;
+        }
+
+        .made-board-overlay.is-logo svg {
+          width: 28px;
+          height: 28px;
+        }
+
+        .made-undo-wrap {
+          margin-top: 8px;
+        }
+
+        .made-theme-picker {
+          margin-top: 18px;
+          gap: 8px;
+        }
+
+        .made-theme-picker .theme-button {
+          width: 84px;
+          height: 40px;
+          font-size: 13px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .back-button {
+          min-width: 136px;
+          font-size: 13px;
+        }
+
+        .made-board-stack {
+          --made-cell-size: 20px;
+        }
+
+        .made-board-overlay {
+          font-size: 12px;
+        }
+
+        .made-board-overlay.is-logo svg {
+          width: 24px;
+          height: 24px;
         }
       }
     </style>
@@ -237,24 +392,28 @@
         <a class="theme-button back-button" href="index.html" aria-label="Back to game page">Back to Game</a>
       </div>
 
-      <main class="window made-window" aria-label="Project information">
-        <div class="made-title-wrap">
-          <button type="button" id="made-reset" class="digits made-title-display" aria-label="Reset board">
-            <span>SAPER</span>
-          </button>
-        </div>
-
-        <section class="board-shell made-board-shell" aria-label="Project details board">
-          <div class="made-board-stack">
-            <div id="made-board" class="board made-board" role="grid" aria-label="Minesweeper-style project details"></div>
-            <div id="made-board-overlays" class="made-board-overlays" aria-hidden="true"></div>
+      <div class="made-window-pan">
+        <main class="window made-window" aria-label="Project information">
+          <div class="made-title-wrap">
+            <button type="button" id="made-reset" class="digits made-title-display" aria-label="Reset board">
+              <span>SAPER</span>
+            </button>
           </div>
-        </section>
 
-        <div class="made-undo-wrap">
-          <button type="button" id="made-undo" class="cell made-undo" aria-label="Undo last move" disabled>↻</button>
-        </div>
-      </main>
+          <section class="board-shell made-board-shell" aria-label="Project details board">
+            <div class="made-board-zoom">
+              <div id="made-board-stack" class="made-board-stack">
+                <div id="made-board" class="board made-board" role="grid" aria-label="Minesweeper-style project details"></div>
+                <div id="made-board-overlays" class="made-board-overlays" aria-hidden="true"></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="made-undo-wrap">
+            <button type="button" id="made-undo" class="cell made-undo" aria-label="Undo last move" disabled>↻</button>
+          </div>
+        </main>
+      </div>
 
       <section class="theme-picker made-theme-picker" aria-label="Theme selection">
         <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
@@ -271,8 +430,13 @@
       const MADE_COOKIE_STATE = "saper_made_state";
       const MADE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
       const themeButtons = Array.from(document.querySelectorAll(".theme-picker .theme-button"));
+      const madeWindowPan = document.querySelector(".made-window-pan");
+      const madeWindow = document.querySelector(".made-window");
       const madeBoard = document.getElementById("made-board");
       const madeBoardOverlays = document.getElementById("made-board-overlays");
+      const madeBoardShell = document.querySelector(".made-board-shell");
+      const madeBoardZoom = document.querySelector(".made-board-zoom");
+      const madeBoardStack = document.getElementById("made-board-stack");
       const resetButton = document.getElementById("made-reset");
       const undoButton = document.getElementById("made-undo");
       const savedTheme = localStorage.getItem("theme");
@@ -1039,6 +1203,52 @@
         }
       }
 
+      function updateMadeBoardMobileScale() {
+        if (!madeWindow || !madeBoardShell || !madeBoardZoom || !madeBoardStack) return;
+
+        const boardWidth = madeBoardStack.offsetWidth;
+        const boardHeight = madeBoardStack.offsetHeight;
+        let scale = 1;
+
+        const isTouchMobileLayout =
+          window.innerWidth <= 900 &&
+          (window.matchMedia("(hover: none)").matches || window.matchMedia("(pointer: coarse)").matches);
+
+        if (isTouchMobileLayout) {
+          const bodyStyles = getComputedStyle(document.body);
+          const bodyPadX =
+            parseFloat(bodyStyles.paddingLeft || "0") + parseFloat(bodyStyles.paddingRight || "0");
+          const panStyles = madeWindowPan ? getComputedStyle(madeWindowPan) : null;
+          const panInsetX = panStyles
+            ? parseFloat(panStyles.paddingLeft || "0") + parseFloat(panStyles.paddingRight || "0")
+            : 0;
+          const windowStyles = getComputedStyle(madeWindow);
+          const windowInsetX =
+            parseFloat(windowStyles.paddingLeft || "0") +
+            parseFloat(windowStyles.paddingRight || "0") +
+            parseFloat(windowStyles.borderLeftWidth || "0") +
+            parseFloat(windowStyles.borderRightWidth || "0");
+          const shellStyles = getComputedStyle(madeBoardShell);
+          const shellInsetX =
+            parseFloat(shellStyles.paddingLeft || "0") + parseFloat(shellStyles.paddingRight || "0");
+          const shellInsetY =
+            parseFloat(shellStyles.paddingTop || "0") +
+            parseFloat(shellStyles.paddingBottom || "0") +
+            parseFloat(shellStyles.borderTopWidth || "0") +
+            parseFloat(shellStyles.borderBottomWidth || "0");
+
+          const availableWidth = Math.max(120, window.innerWidth - bodyPadX - panInsetX - windowInsetX - shellInsetX);
+          const shellTop = madeBoardShell.getBoundingClientRect().top;
+          const availableHeight = Math.max(120, window.innerHeight - shellTop - 16 - shellInsetY);
+
+          scale = Math.min(1, availableWidth / Math.max(1, boardWidth), availableHeight / Math.max(1, boardHeight));
+        }
+
+        madeBoardZoom.style.width = `${Math.ceil(boardWidth * scale)}px`;
+        madeBoardZoom.style.height = `${Math.ceil(boardHeight * scale)}px`;
+        madeBoardZoom.style.setProperty("--made-board-scale", String(scale));
+      }
+
       for (const button of themeButtons) {
         button.addEventListener("click", () => setTheme(button.dataset.theme));
       }
@@ -1051,6 +1261,7 @@
         autoFlagAroundOpenArea();
       }
       renderBoard();
+      requestAnimationFrame(updateMadeBoardMobileScale);
 
       if (madeBoard) {
         madeBoard.addEventListener("click", (event) => {
@@ -1092,6 +1303,9 @@
       if (undoButton instanceof HTMLButtonElement) {
         undoButton.addEventListener("click", undoLastMove);
       }
+
+      window.addEventListener("resize", () => requestAnimationFrame(updateMadeBoardMobileScale));
+      window.addEventListener("orientationchange", () => requestAnimationFrame(updateMadeBoardMobileScale));
 
       setTheme(startTheme);
     </script>
