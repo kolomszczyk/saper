@@ -380,7 +380,7 @@ body {
 
 .cell.chord-preview {
   border: 1px solid var(--cell-open-border);
-  background: var(--cell-chord-bg);
+  background: var(--cell-open-bg);
 }
 
 .cell.mine {

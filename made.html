@@ -93,6 +93,7 @@
         grid-template-columns: repeat(22, var(--made-cell-size));
         grid-auto-rows: var(--made-cell-size);
         z-index: 3;
+        pointer-events: none;
       }
 
       .made-board .cell {
@@ -114,6 +115,7 @@
         text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
         pointer-events: none;
         z-index: 4;
+        display: none;
       }
 
       .made-board .cell.open {
@@ -123,6 +125,10 @@
 
       .made-board .cell.is-text-reserved.open {
         background: #05070b;
+      }
+
+      :root[data-theme="light"] .made-board .cell.is-text-reserved.open {
+        background: var(--cell-open-bg);
       }
 
       .made-board .cell.debug-mine {
@@ -172,6 +178,10 @@
         height: 34px;
         display: block;
         fill: #ffffff;
+      }
+
+      :root[data-theme="light"] .made-board-overlay.is-logo svg {
+        fill: #111111;
       }
 
       .made-board-overlay.is-link {
@@ -258,6 +268,8 @@
 
     <script>
       const root = document.documentElement;
+      const MADE_COOKIE_STATE = "saper_made_state";
+      const MADE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
       const themeButtons = Array.from(document.querySelectorAll(".theme-picker .theme-button"));
       const madeBoard = document.getElementById("made-board");
       const madeBoardOverlays = document.getElementById("made-board-overlays");
@@ -269,11 +281,12 @@
       const boardCols = 22;
       const boardRows = 14;
       const allCells = [];
+      const chordPreviewCells = [];
       const state = new Map();
       const historyStack = [];
       let revealAllMines = false;
       let gameFinished = false;
-      const debugShowMines = true;
+      const debugShowMines = false;
       const startAsUnplayed = true;
       const openReservedTextTilesAtStart = false;
       const autoRevealUnderTextOnStart = true;
@@ -412,6 +425,20 @@
         return `${c},${r}`;
       }
 
+      function setCookie(name, value, maxAge = MADE_COOKIE_MAX_AGE) {
+        document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+      }
+
+      function getCookie(name) {
+        const prefix = `${name}=`;
+        const parts = document.cookie ? document.cookie.split(";") : [];
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed.startsWith(prefix)) return decodeURIComponent(trimmed.slice(prefix.length));
+        }
+        return "";
+      }
+
       function isReservedTextTile(c, r) {
         return reservedTextTileKeys.has(key(c, r));
       }
@@ -433,12 +460,12 @@
         return result;
       }
 
-      function buildState() {
+      function buildState(reuseCurrentMineLayout = false) {
         state.clear();
         revealAllMines = false;
         gameFinished = false;
         historyStack.length = 0;
-        loadOrCreateMineLayout();
+        if (!reuseCurrentMineLayout) loadOrCreateMineLayout();
 
         for (let r = 1; r <= boardRows; r += 1) {
           for (let c = 1; c <= boardCols; c += 1) {
@@ -504,6 +531,107 @@
             flagged: cell.flagged,
           })),
         };
+      }
+
+      function serializeMadeStateCompact() {
+        let mines = "";
+        let open = "";
+        let flags = "";
+
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            const cell = state.get(key(c, r));
+            mines += cell?.mine ? "1" : "0";
+            open += cell?.open ? "1" : "0";
+            flags += cell?.flagged ? "1" : "0";
+          }
+        }
+
+        return {
+          revealAllMines,
+          gameFinished,
+          mines,
+          open,
+          flags,
+        };
+      }
+
+      function saveMadeGameState() {
+        if (state.size === 0) return;
+        const payload = {
+          v: 1,
+          rows: boardRows,
+          cols: boardCols,
+          data: serializeMadeStateCompact(),
+        };
+        setCookie(MADE_COOKIE_STATE, JSON.stringify(payload));
+      }
+
+      function restoreMadeGameState() {
+        const raw = getCookie(MADE_COOKIE_STATE);
+        if (!raw) return false;
+
+        let saved;
+        try {
+          saved = JSON.parse(raw);
+        } catch {
+          return false;
+        }
+
+        if (
+          !saved ||
+          saved.v !== 1 ||
+          Number(saved.rows) !== boardRows ||
+          Number(saved.cols) !== boardCols ||
+          !saved.data ||
+          typeof saved.data.mines !== "string" ||
+          typeof saved.data.open !== "string" ||
+          typeof saved.data.flags !== "string"
+        ) {
+          return false;
+        }
+
+        const expectedCells = boardRows * boardCols;
+        if (
+          saved.data.mines.length !== expectedCells ||
+          saved.data.open.length !== expectedCells ||
+          saved.data.flags.length !== expectedCells
+        ) {
+          return false;
+        }
+
+        const restoredMinePositions = [];
+        let index = 0;
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            const mineBit = saved.data.mines[index];
+            const openBit = saved.data.open[index];
+            const flagBit = saved.data.flags[index];
+            if (!"01".includes(mineBit) || !"01".includes(openBit) || !"01".includes(flagBit)) return false;
+            if (mineBit === "1") restoredMinePositions.push([c, r]);
+            index += 1;
+          }
+        }
+
+        minePositions = restoredMinePositions;
+        buildState(true);
+        revealAllMines = Boolean(saved.data.revealAllMines);
+        gameFinished = Boolean(saved.data.gameFinished);
+        index = 0;
+        for (let r = 1; r <= boardRows; r += 1) {
+          for (let c = 1; c <= boardCols; c += 1) {
+            const cell = state.get(key(c, r));
+            if (!cell) {
+              index += 1;
+              continue;
+            }
+            cell.open = saved.data.open[index] === "1";
+            cell.flagged = saved.data.flags[index] === "1";
+            index += 1;
+          }
+        }
+        historyStack.length = 0;
+        return true;
       }
 
       function restoreSnapshot(snapshot) {
@@ -741,6 +869,72 @@
         }
       }
 
+      function countFlaggedNeighbors(c, r) {
+        let total = 0;
+        for (const [nc, nr] of neighbors(c, r)) {
+          if (state.get(key(nc, nr))?.flagged) total += 1;
+        }
+        return total;
+      }
+
+      function clearChordPreview() {
+        for (const el of chordPreviewCells) {
+          el.classList.remove("chord-preview");
+        }
+        chordPreviewCells.length = 0;
+      }
+
+      function showChordPreview(c, r) {
+        clearChordPreview();
+        if (gameFinished) return;
+        const cell = state.get(key(c, r));
+        if (!cell || !cell.open || cell.count <= 0) return;
+        const flaggedAround = countFlaggedNeighbors(c, r);
+        if (flaggedAround === cell.count) return;
+
+        for (const [nc, nr] of neighbors(c, r)) {
+          const next = state.get(key(nc, nr));
+          if (!next || next.open || next.flagged) continue;
+          const el = allCells.find((button) => Number(button.dataset.c) === nc && Number(button.dataset.r) === nr);
+          if (!el) continue;
+          el.classList.add("chord-preview");
+          chordPreviewCells.push(el);
+        }
+      }
+
+      function chordOpenCell(c, r) {
+        if (gameFinished) return;
+        const cell = state.get(key(c, r));
+        if (!cell || !cell.open || cell.count <= 0) return;
+        if (countFlaggedNeighbors(c, r) !== cell.count) return;
+
+        let hitMine = false;
+        for (const [nc, nr] of neighbors(c, r)) {
+          const next = state.get(key(nc, nr));
+          if (!next || next.open || next.flagged) continue;
+          if (next.mine) {
+            next.open = true;
+            hitMine = true;
+            continue;
+          }
+          if (next.count === 0) {
+            revealZeros(next);
+          } else {
+            next.open = true;
+          }
+        }
+
+        if (hitMine) {
+          gameFinished = true;
+          revealAllBombs();
+        } else {
+          checkWin();
+        }
+
+        clearChordPreview();
+        renderBoard();
+      }
+
       function checkWin() {
         for (const cell of state.values()) {
           if (!cell.mine && !cell.open) return false;
@@ -755,7 +949,13 @@
       function openCell(c, r) {
         if (gameFinished) return;
         const cell = state.get(key(c, r));
-        if (!cell || cell.open || cell.flagged) return;
+        if (!cell) return;
+        if (cell.open) {
+          pushHistory();
+          chordOpenCell(c, r);
+          return;
+        }
+        if (cell.flagged) return;
         pushHistory();
 
         if (cell.mine) {
@@ -825,6 +1025,8 @@
         if (undoButton instanceof HTMLButtonElement) {
           undoButton.disabled = historyStack.length === 0;
         }
+
+        saveMadeGameState();
       }
 
       function setTheme(theme) {
@@ -842,10 +1044,12 @@
       }
 
       createBoardDom();
-      buildState();
-      autoRevealTextZones();
-      autoRevealExtraSafeCells();
-      autoFlagAroundOpenArea();
+      if (!restoreMadeGameState()) {
+        buildState();
+        autoRevealTextZones();
+        autoRevealExtraSafeCells();
+        autoFlagAroundOpenArea();
+      }
       renderBoard();
 
       if (madeBoard) {
@@ -854,8 +1058,21 @@
           if (!(target instanceof HTMLElement)) return;
           const cellEl = target.closest(".cell");
           if (!(cellEl instanceof HTMLButtonElement)) return;
+          clearChordPreview();
           openCell(Number(cellEl.dataset.c), Number(cellEl.dataset.r));
         });
+
+        madeBoard.addEventListener("mousedown", (event) => {
+          if (event.button !== 0) return;
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          const cellEl = target.closest(".cell");
+          if (!(cellEl instanceof HTMLButtonElement)) return;
+          showChordPreview(Number(cellEl.dataset.c), Number(cellEl.dataset.r));
+        });
+
+        madeBoard.addEventListener("mouseup", clearChordPreview);
+        madeBoard.addEventListener("mouseleave", clearChordPreview);
 
         madeBoard.addEventListener("contextmenu", (event) => {
           const target = event.target;
@@ -863,6 +1080,7 @@
           const cellEl = target.closest(".cell");
           if (!(cellEl instanceof HTMLButtonElement)) return;
           event.preventDefault();
+          clearChordPreview();
           toggleFlag(Number(cellEl.dataset.c), Number(cellEl.dataset.r));
         });
       }

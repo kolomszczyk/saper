@@ -364,7 +364,10 @@ function onCellPointerDown(event, r, c) {
   ) {
     return;
   }
-  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (event.pointerType === "mouse") {
+    // Mouse already uses mousedown/up for chord preview; keep preview visible while holding.
+    return;
+  }
   if (!event.isPrimary) return;
   cancelLongPress();
   longPressPointerId = event.pointerId;
