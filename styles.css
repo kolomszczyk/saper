@@ -1,4 +1,5 @@
 :root {
+  --ui-font: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Geneva, sans-serif;
   --bg: #101216;
   --light: #555d68;
   --mid: #262b33;
@@ -104,10 +105,19 @@
   box-sizing: border-box;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+button:focus {
+  outline: none;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Times New Roman", serif;
+  font-family: var(--ui-font);
   background: var(--body-background);
   color: var(--body-text);
   padding: 18px 14px;
@@ -223,6 +233,19 @@ body {
   border-bottom: 3px solid var(--light);
   padding: 6px;
   overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+}
+
+.board-zoom {
+  width: fit-content;
+  height: fit-content;
+  overflow: hidden;
+}
+
+.board-zoom > .board {
+  transform-origin: top left;
+  transform: scale(var(--board-scale, 1));
 }
 
 .replay-wrap {
@@ -330,12 +353,16 @@ body {
   background: var(--cell-bg);
   display: grid;
   place-items: center;
-  font-family: "Arial", sans-serif;
+  font-family: var(--ui-font);
   font-size: 16px;
   font-weight: 700;
   padding: 0;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: auto;
 }
 
 .cell:focus,
@@ -428,6 +455,14 @@ body {
   font-weight: 700;
 }
 
+.credit-line {
+  margin: 26px 0 0;
+  font-size: 11px;
+  color: #4f545c;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 @media (max-width: 900px) {
   .top-menu,
   .window {
@@ -445,5 +480,31 @@ body {
 
   .headline {
     font-size: 42px;
+  }
+
+  .board-shell.is-mobile-fitted {
+    overflow: hidden auto;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .face:active {
+    border-color: var(--light) var(--dark) var(--dark) var(--light);
+  }
+
+  .replay-button:active:not(:disabled) {
+    border-color: var(--light) var(--dark) var(--dark) var(--light);
+  }
+
+  .difficulty-button:active,
+  .theme-button:active {
+    transform: none;
+    border-color: var(--picker-border-raised);
+  }
+
+  .difficulty-button.is-active:active,
+  .theme-button.is-active:active {
+    transform: translateY(1px);
+    border-color: var(--picker-border-pressed);
   }
 }

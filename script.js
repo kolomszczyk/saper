@@ -14,6 +14,8 @@ const THEMES = {
 };
 
 const boardEl = document.getElementById("board");
+const boardShellEl = document.querySelector(".board-shell");
+const boardZoomEl = document.querySelector(".board-zoom");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
@@ -23,6 +25,8 @@ const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
+const LONG_PRESS_MS = 420;
+const LONG_PRESS_MOVE_TOLERANCE = 4;
 document.documentElement.style.setProperty("--flag-url", `url(\"./flag.svg?v=${Date.now()}\")`);
 document.documentElement.style.setProperty("--bomb-url", `url(\"./bomb.svg?v=${Date.now()}\")`);
 document.documentElement.style.setProperty("--cross-url", `url(\"./cross.svg?v=${Date.now()}\")`);
@@ -40,6 +44,17 @@ let elapsed = 0;
 let timerId = null;
 let chordPreviewCells = [];
 let undoState = null;
+let longPressTimerId = null;
+let longPressPointerId = null;
+let longPressStartX = 0;
+let longPressStartY = 0;
+let longPressRow = -1;
+let longPressCol = -1;
+let longPressTriggered = false;
+let suppressClickKey = "";
+let suppressClickExpiresAt = 0;
+let suppressContextMenuKey = "";
+let suppressContextMenuExpiresAt = 0;
 
 function format3(n) {
   return String(n).padStart(3, "0").slice(-3);
@@ -242,6 +257,149 @@ function applyCellVisual(cell) {
   }
 }
 
+function cellKey(r, c) {
+  return `${r},${c}`;
+}
+
+function consumeSuppressedClick(r, c) {
+  if (suppressClickExpiresAt && performance.now() > suppressClickExpiresAt) {
+    suppressClickKey = "";
+    suppressClickExpiresAt = 0;
+  }
+  const key = cellKey(r, c);
+  if (suppressClickKey !== key) return false;
+  suppressClickKey = "";
+  suppressClickExpiresAt = 0;
+  return true;
+}
+
+function shouldSuppressContextMenu(r, c) {
+  if (suppressContextMenuExpiresAt && performance.now() > suppressContextMenuExpiresAt) {
+    suppressContextMenuKey = "";
+    suppressContextMenuExpiresAt = 0;
+  }
+  const key = cellKey(r, c);
+  if (suppressContextMenuKey !== key) return false;
+  suppressContextMenuKey = "";
+  suppressContextMenuExpiresAt = 0;
+  return true;
+}
+
+function clearLongPressState() {
+  if (longPressTimerId) {
+    clearTimeout(longPressTimerId);
+    longPressTimerId = null;
+  }
+  longPressPointerId = null;
+  longPressRow = -1;
+  longPressCol = -1;
+}
+
+function cancelLongPress() {
+  clearLongPressState();
+  longPressTriggered = false;
+}
+
+function triggerLongPressFlag(r, c) {
+  longPressTimerId = null;
+  longPressTriggered = true;
+  const key = cellKey(r, c);
+  suppressClickKey = key;
+  suppressClickExpiresAt = performance.now() + 1200;
+  suppressContextMenuKey = key;
+  suppressContextMenuExpiresAt = performance.now() + 1200;
+  clearChordPreview();
+  onRightClick(r, c);
+}
+
+function onCellPointerDown(event, r, c) {
+  if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+  if (!event.isPrimary) return;
+  cancelLongPress();
+  longPressPointerId = event.pointerId;
+  longPressRow = r;
+  longPressCol = c;
+  longPressStartX = event.clientX;
+  longPressStartY = event.clientY;
+  longPressTimerId = setTimeout(() => {
+    if (longPressPointerId !== event.pointerId) return;
+    triggerLongPressFlag(r, c);
+  }, LONG_PRESS_MS);
+}
+
+function onCellPointerMove(event) {
+  if (!event.isPrimary) return;
+  if (event.pointerId !== longPressPointerId || !longPressTimerId) return;
+  const movedX = Math.abs(event.clientX - longPressStartX);
+  const movedY = Math.abs(event.clientY - longPressStartY);
+  if (movedX > LONG_PRESS_MOVE_TOLERANCE || movedY > LONG_PRESS_MOVE_TOLERANCE) {
+    cancelLongPress();
+  }
+}
+
+function onCellTouchStart(event) {
+  if (event.touches.length > 1) {
+    cancelLongPress();
+  }
+}
+
+function onCellTouchMove() {
+  // Priorytet dla przesuwania planszy jednym palcem: każdy ruch anuluje flagę z long-press.
+  cancelLongPress();
+}
+
+function onCellPointerUpOrCancel(event, r, c) {
+  if (!event.isPrimary) return;
+  if (event.pointerId !== longPressPointerId) return;
+  const wasLongPress = longPressTriggered && longPressRow === r && longPressCol === c;
+  clearLongPressState();
+  if (!wasLongPress) {
+    longPressTriggered = false;
+    return;
+  }
+  longPressTriggered = false;
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+}
+
+function updateBoardMobileScale() {
+  if (!boardEl || !boardZoomEl || !boardShellEl || !rows || !cols) return;
+
+  const boardWidth = cols * CELL_SIZE;
+  const boardHeight = rows * CELL_SIZE;
+  let scale = 1;
+
+  const isMobileLayout = window.innerWidth <= 900;
+  if (isMobileLayout) {
+    const bodyStyles = getComputedStyle(document.body);
+    const bodyPadX =
+      parseFloat(bodyStyles.paddingLeft || "0") + parseFloat(bodyStyles.paddingRight || "0");
+    const shellStyles = getComputedStyle(boardShellEl);
+    const shellInsetX =
+      parseFloat(shellStyles.paddingLeft || "0") +
+      parseFloat(shellStyles.paddingRight || "0") +
+      parseFloat(shellStyles.borderLeftWidth || "0") +
+      parseFloat(shellStyles.borderRightWidth || "0");
+    const shellInsetY =
+      parseFloat(shellStyles.paddingTop || "0") +
+      parseFloat(shellStyles.paddingBottom || "0") +
+      parseFloat(shellStyles.borderTopWidth || "0") +
+      parseFloat(shellStyles.borderBottomWidth || "0");
+
+    const availableWidth = Math.max(120, window.innerWidth - bodyPadX - shellInsetX);
+    const shellTop = boardShellEl.getBoundingClientRect().top;
+    const availableHeight = Math.max(120, window.innerHeight - shellTop - 16 - shellInsetY);
+
+    scale = Math.min(1, availableWidth / boardWidth, availableHeight / boardHeight);
+  }
+
+  boardZoomEl.style.width = `${Math.ceil(boardWidth * scale)}px`;
+  boardZoomEl.style.height = `${Math.ceil(boardHeight * scale)}px`;
+  boardZoomEl.style.setProperty("--board-scale", String(scale));
+  boardShellEl.classList.toggle("is-mobile-fitted", scale < 1);
+}
+
 function renderBoard() {
   boardEl.innerHTML = "";
   boardEl.style.gridTemplateColumns = `repeat(${cols}, ${CELL_SIZE}px)`;
@@ -257,7 +415,10 @@ function renderBoard() {
       cellBtn.dataset.row = String(r);
       cellBtn.dataset.col = String(c);
 
-      cellBtn.addEventListener("click", () => onLeftClick(r, c));
+      cellBtn.addEventListener("click", () => {
+        if (consumeSuppressedClick(r, c)) return;
+        onLeftClick(r, c);
+      });
       cellBtn.addEventListener("mousedown", (e) => {
         if (e.button !== 0) return;
         showChordPreview(r, c);
@@ -267,14 +428,25 @@ function renderBoard() {
       cellBtn.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         clearChordPreview();
+        if (shouldSuppressContextMenu(r, c)) return;
         onRightClick(r, c);
       });
+      cellBtn.addEventListener("pointerdown", (e) => onCellPointerDown(e, r, c));
+      cellBtn.addEventListener("pointermove", onCellPointerMove);
+      cellBtn.addEventListener("pointerup", (e) => onCellPointerUpOrCancel(e, r, c));
+      cellBtn.addEventListener("pointercancel", (e) => onCellPointerUpOrCancel(e, r, c));
+      cellBtn.addEventListener("pointerleave", cancelLongPress);
+      cellBtn.addEventListener("touchstart", onCellTouchStart, { passive: true });
+      cellBtn.addEventListener("touchmove", onCellTouchMove, { passive: true });
+      cellBtn.addEventListener("touchend", cancelLongPress, { passive: true });
+      cellBtn.addEventListener("touchcancel", cancelLongPress, { passive: true });
 
       grid[r][c].el = cellBtn;
       fragment.appendChild(cellBtn);
     }
   }
   boardEl.appendChild(fragment);
+  requestAnimationFrame(updateBoardMobileScale);
 }
 
 function revealCell(r, c) {
@@ -757,6 +929,18 @@ function newGame() {
 }
 
 window.addEventListener("mouseup", clearChordPreview);
+boardShellEl?.addEventListener("scroll", cancelLongPress, { passive: true });
+window.addEventListener("resize", () => {
+  requestAnimationFrame(updateBoardMobileScale);
+});
+window.addEventListener("orientationchange", () => {
+  requestAnimationFrame(updateBoardMobileScale);
+});
+window.addEventListener("scroll", () => {
+  if (window.innerWidth <= 900) {
+    requestAnimationFrame(updateBoardMobileScale);
+  }
+}, { passive: true });
 newGameEl.addEventListener("click", newGame);
 replayEl.addEventListener("click", undoLoss);
 for (const btn of difficultyButtons) {
@@ -784,4 +968,6 @@ syncThemeButtons();
 applyThemeSelection();
 if (!restoreGameState()) {
   newGame();
+} else {
+  requestAnimationFrame(updateBoardMobileScale);
 }

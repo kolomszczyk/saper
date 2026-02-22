@@ -2,8 +2,14 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes"
+    />
     <title>Saper</title>
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-dark.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -21,7 +27,9 @@
         </section>
 
         <section class="board-shell">
-          <div id="board" class="board" role="grid" aria-label="Plansza Sapera"></div>
+          <div class="board-zoom">
+            <div id="board" class="board" role="grid" aria-label="Plansza Sapera"></div>
+          </div>
         </section>
 
         <div class="replay-wrap">
@@ -49,6 +57,8 @@
           Light
         </button>
       </section>
+
+      <p class="credit-line">Saper made by moonboy</p>
 
     </div>
 
