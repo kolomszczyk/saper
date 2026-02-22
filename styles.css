@@ -486,7 +486,7 @@ body {
 }
 
 .board.is-daily-limit-board,
-.made-board.is-daily-limit-board {
+.info-board.is-daily-limit-board {
   position: relative;
 }
 

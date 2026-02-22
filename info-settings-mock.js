@@ -12,10 +12,10 @@
   const mapHeightInput = document.getElementById("map-height");
   const bombCountInput = document.getElementById("bomb-count");
   const gamesPerDayInput = document.getElementById("games-per-day");
-  const saveButton = document.querySelector(".made-settings-save");
-  const customMapSwitch = customMapToggle?.closest(".made-settings-switch");
-  const leftColumn = document.querySelector(".made-settings-left-col");
-  const bombCountField = document.querySelector(".made-settings-bombs-field");
+  const saveButton = document.querySelector(".info-settings-save");
+  const customMapSwitch = customMapToggle?.closest(".info-settings-switch");
+  const leftColumn = document.querySelector(".info-settings-left-col");
+  const bombCountField = document.querySelector(".info-settings-bombs-field");
   const dailyGameLimit = window.sharedDailyGameLimit;
   const cookies = window.sharedCookies;
   const customMapControlledInputs = [

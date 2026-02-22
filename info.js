@@ -1,17 +1,17 @@
 const root = document.documentElement;
 const COOKIE_SETTINGS = "saper_settings";
-const MADE_COOKIE_STATE = "saper_made_state";
-const MADE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const INFO_COOKIE_STATE = "saper_info_state";
+const INFO_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const themeButtons = Array.from(document.querySelectorAll(".theme-picker .theme-button"));
-const madeWindowPan = document.querySelector(".made-window-pan");
-const madeWindow = document.querySelector(".made-window");
-const madeBoard = document.getElementById("made-board");
-const madeBoardOverlays = document.getElementById("made-board-overlays");
-const madeBoardShell = document.querySelector(".made-board-shell");
-const madeBoardZoom = document.querySelector(".made-board-zoom");
-const madeBoardStack = document.getElementById("made-board-stack");
-const resetButton = document.getElementById("made-reset");
-const undoButton = document.getElementById("made-undo");
+const infoWindowPan = document.querySelector(".info-window-pan");
+const infoWindow = document.querySelector(".info-window");
+const infoBoard = document.getElementById("info-board");
+const infoBoardOverlays = document.getElementById("info-board-overlays");
+const infoBoardShell = document.querySelector(".info-board-shell");
+const infoBoardZoom = document.querySelector(".info-board-zoom");
+const infoBoardStack = document.getElementById("info-board-stack");
+const resetButton = document.getElementById("info-reset");
+const undoButton = document.getElementById("info-undo");
 let startTheme = "dark";
 
 const boardCols = 22;
@@ -188,7 +188,7 @@ function key(c, r) {
   return `${c},${r}`;
 }
 
-function setCookie(name, value, maxAge = MADE_COOKIE_MAX_AGE) {
+function setCookie(name, value, maxAge = INFO_COOKIE_MAX_AGE) {
   writeCookie(name, value, maxAge);
 }
 
@@ -227,17 +227,17 @@ function getDailyLimitStatus() {
 }
 
 function removeMadeDailyLimitMessage() {
-  if (!madeBoardStack) return;
-  const current = madeBoardStack.querySelector(".daily-limit-message");
+  if (!infoBoardStack) return;
+  const current = infoBoardStack.querySelector(".daily-limit-message");
   if (current) current.remove();
 }
 
 function renderMadeDisabledLimitBoard(_status = getDailyLimitStatus()) {
-  if (!madeBoard || !madeBoardOverlays) return;
+  if (!infoBoard || !infoBoardOverlays) return;
 
   // Keep texts/logos visible by reusing the normal board/overlay DOM, then freeze all tiles.
   createBoardDom();
-  madeBoard.classList.add("is-daily-limit-board");
+  infoBoard.classList.add("is-daily-limit-board");
 
   for (const el of allCells) {
     el.className = "cell open daily-limit-cell";
@@ -251,7 +251,7 @@ function unlockMadeBoardForDailyLimit() {
   if (!dailyLimitLocked) return;
   dailyLimitLocked = false;
   removeMadeDailyLimitMessage();
-  madeBoard?.classList.remove("is-daily-limit-board");
+  infoBoard?.classList.remove("is-daily-limit-board");
   if (resetButton instanceof HTMLButtonElement) resetButton.disabled = false;
 }
 
@@ -470,11 +470,11 @@ function saveGameState() {
     data: buildMadeStatePayload(),
     undo: persistedUndo,
   };
-  setCookie(MADE_COOKIE_STATE, JSON.stringify(payload));
+  setCookie(INFO_COOKIE_STATE, JSON.stringify(payload));
 }
 
 function restoreGameState() {
-  const raw = getCookie(MADE_COOKIE_STATE);
+  const raw = getCookie(INFO_COOKIE_STATE);
   if (!raw) return false;
 
   let saved;
@@ -658,11 +658,11 @@ function autoRevealExtraSafeCells() {
 }
 
 function createBoardDom() {
-  if (!madeBoard || !madeBoardOverlays) return;
+  if (!infoBoard || !infoBoardOverlays) return;
   removeMadeDailyLimitMessage();
-  madeBoard.classList.remove("is-daily-limit-board");
-  madeBoard.innerHTML = "";
-  madeBoardOverlays.innerHTML = "";
+  infoBoard.classList.remove("is-daily-limit-board");
+  infoBoard.innerHTML = "";
+  infoBoardOverlays.innerHTML = "";
   allCells.length = 0;
 
   forEachBoardCoord(boardRows, boardCols, ({ r, c }) => {
@@ -677,7 +677,7 @@ function createBoardDom() {
     el.dataset.index = String(index);
     el.setAttribute("role", "gridcell");
     el.setAttribute("aria-label", `Cell ${index} (${cc}, ${rr})`);
-    madeBoard.append(el);
+    infoBoard.append(el);
     allCells.push(el);
   });
 
@@ -686,7 +686,7 @@ function createBoardDom() {
       const parts = zone.parts ?? [{ c: zone.c, r: zone.r, w: zone.w, h: zone.h, text: zone.text }];
       for (const part of parts) {
         const overlay = document.createElement("div");
-        overlay.className = `made-board-overlay${zone.isLink ? " is-link" : ""}${zone.outlinedText ? " is-text-outline" : ""}`;
+        overlay.className = `info-board-overlay${zone.isLink ? " is-link" : ""}${zone.outlinedText ? " is-text-outline" : ""}`;
         if (zone.href) overlay.classList.add("is-text-clickable");
         overlay.style.gridColumn = `${part.c} / span ${part.w}`;
         overlay.style.gridRow = `${part.r} / span ${part.h}`;
@@ -715,12 +715,12 @@ function createBoardDom() {
           overlay.textContent = part.text;
         }
 
-        madeBoardOverlays.append(overlay);
+        infoBoardOverlays.append(overlay);
       }
     } else {
       const overlay = document.createElement("div");
       const mainLogoType = zone.logoType ?? "github";
-      overlay.className = `made-board-overlay is-logo${mainLogoType !== "github" ? " is-repo-logo" : ""}`;
+      overlay.className = `info-board-overlay is-logo${mainLogoType !== "github" ? " is-repo-logo" : ""}`;
       overlay.style.gridColumn = `${zone.c} / span ${zone.w}`;
       overlay.style.gridRow = `${zone.r} / span ${zone.h}`;
       if (zone.href) {
@@ -736,12 +736,12 @@ function createBoardDom() {
         overlay.setAttribute("aria-hidden", "true");
         overlay.innerHTML = getMadeLogoSvg(mainLogoType);
       }
-      madeBoardOverlays.append(overlay);
+      infoBoardOverlays.append(overlay);
 
       for (const copy of zone.logoCopies ?? []) {
         const copyOverlay = document.createElement("div");
         const copyLogoType = copy.logoType ?? "github";
-        copyOverlay.className = `made-board-overlay is-logo${copyLogoType !== "github" ? " is-repo-logo" : ""}`;
+        copyOverlay.className = `info-board-overlay is-logo${copyLogoType !== "github" ? " is-repo-logo" : ""}`;
         copyOverlay.style.gridColumn = `${copy.c} / span ${copy.w}`;
         copyOverlay.style.gridRow = `${copy.r} / span ${copy.h}`;
         if (copy.href) {
@@ -757,7 +757,7 @@ function createBoardDom() {
           copyOverlay.setAttribute("aria-hidden", "true");
           copyOverlay.innerHTML = getMadeLogoSvg(copyLogoType);
         }
-        madeBoardOverlays.append(copyOverlay);
+        infoBoardOverlays.append(copyOverlay);
       }
     }
   }
@@ -1046,10 +1046,10 @@ function setTheme(theme) {
 }
 
 function updateMadeBoardMobileScale() {
-  if (!madeWindow || !madeBoardShell || !madeBoardZoom || !madeBoardStack) return;
+  if (!infoWindow || !infoBoardShell || !infoBoardZoom || !infoBoardStack) return;
 
-  const boardWidth = madeBoardStack.offsetWidth;
-  const boardHeight = madeBoardStack.offsetHeight;
+  const boardWidth = infoBoardStack.offsetWidth;
+  const boardHeight = infoBoardStack.offsetHeight;
   let scale = 1;
 
   const isTouchMobileLayout =
@@ -1060,17 +1060,17 @@ function updateMadeBoardMobileScale() {
     const bodyStyles = getComputedStyle(document.body);
     const bodyPadX =
       parseFloat(bodyStyles.paddingLeft || "0") + parseFloat(bodyStyles.paddingRight || "0");
-    const panStyles = madeWindowPan ? getComputedStyle(madeWindowPan) : null;
+    const panStyles = infoWindowPan ? getComputedStyle(infoWindowPan) : null;
     const panInsetX = panStyles
       ? parseFloat(panStyles.paddingLeft || "0") + parseFloat(panStyles.paddingRight || "0")
       : 0;
-    const windowStyles = getComputedStyle(madeWindow);
+    const windowStyles = getComputedStyle(infoWindow);
     const windowInsetX =
       parseFloat(windowStyles.paddingLeft || "0") +
       parseFloat(windowStyles.paddingRight || "0") +
       parseFloat(windowStyles.borderLeftWidth || "0") +
       parseFloat(windowStyles.borderRightWidth || "0");
-    const shellStyles = getComputedStyle(madeBoardShell);
+    const shellStyles = getComputedStyle(infoBoardShell);
     const shellInsetX =
       parseFloat(shellStyles.paddingLeft || "0") + parseFloat(shellStyles.paddingRight || "0");
     const shellInsetY =
@@ -1080,15 +1080,15 @@ function updateMadeBoardMobileScale() {
       parseFloat(shellStyles.borderBottomWidth || "0");
 
     const availableWidth = Math.max(120, window.innerWidth - bodyPadX - panInsetX - windowInsetX - shellInsetX);
-    const shellTop = madeBoardShell.getBoundingClientRect().top;
+    const shellTop = infoBoardShell.getBoundingClientRect().top;
     const availableHeight = Math.max(120, window.innerHeight - shellTop - 16 - shellInsetY);
 
     scale = Math.min(1, availableWidth / Math.max(1, boardWidth), availableHeight / Math.max(1, boardHeight));
   }
 
-  madeBoardZoom.style.width = `${Math.ceil(boardWidth * scale)}px`;
-  madeBoardZoom.style.height = `${Math.ceil(boardHeight * scale)}px`;
-  madeBoardZoom.style.setProperty("--made-board-scale", String(scale));
+  infoBoardZoom.style.width = `${Math.ceil(boardWidth * scale)}px`;
+  infoBoardZoom.style.height = `${Math.ceil(boardHeight * scale)}px`;
+  infoBoardZoom.style.setProperty("--info-board-scale", String(scale));
 }
 
 for (const button of themeButtons) {
@@ -1096,30 +1096,30 @@ for (const button of themeButtons) {
 }
 
 const initialDailyLimitStatus = getDailyLimitStatus();
-let madeBoardInitialized = false;
+let infoBoardInitialized = false;
 
 if (initialDailyLimitStatus.reached) {
   lockMadeBoardForDailyLimit(initialDailyLimitStatus);
 } else {
   createBoardDom();
   if (restoreGameState()) {
-    madeBoardInitialized = true;
+    infoBoardInitialized = true;
   } else if (buildState()) {
     autoRevealTextZones();
     autoRevealExtraSafeCells();
     autoFlagAroundOpenArea();
-    madeBoardInitialized = true;
+    infoBoardInitialized = true;
   }
 }
 
-if (madeBoardInitialized) {
+if (infoBoardInitialized) {
   renderBoard();
   saveGameState();
   requestAnimationFrame(updateMadeBoardMobileScale);
 }
 
-if (madeBoard) {
-  madeBoard.addEventListener("click", (event) => {
+if (infoBoard) {
+  infoBoard.addEventListener("click", (event) => {
     const cellEl = getBoardCellFromEventTarget(event.target);
     if (!cellEl) return;
     clearChordPreview();
@@ -1129,7 +1129,7 @@ if (madeBoard) {
     openCell(c, r);
   });
 
-  madeBoard.addEventListener("mousedown", (event) => {
+  infoBoard.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
     const cellEl = getBoardCellFromEventTarget(event.target);
     if (!cellEl) return;
@@ -1139,28 +1139,28 @@ if (madeBoard) {
     startMouseLongPress(event, c, r);
   });
 
-  madeBoard.addEventListener("pointerdown", onBoardPointerDown);
-  madeBoard.addEventListener("pointermove", onBoardPointerMove);
-  madeBoard.addEventListener("pointerup", onBoardPointerUpOrCancel);
-  madeBoard.addEventListener("pointercancel", onBoardPointerUpOrCancel);
-  madeBoard.addEventListener("pointerleave", () => {
+  infoBoard.addEventListener("pointerdown", onBoardPointerDown);
+  infoBoard.addEventListener("pointermove", onBoardPointerMove);
+  infoBoard.addEventListener("pointerup", onBoardPointerUpOrCancel);
+  infoBoard.addEventListener("pointercancel", onBoardPointerUpOrCancel);
+  infoBoard.addEventListener("pointerleave", () => {
     clearChordPreview();
     cancelLongPress();
   });
 
-  madeBoard.addEventListener("mousemove", updateMouseLongPress);
+  infoBoard.addEventListener("mousemove", updateMouseLongPress);
 
-  madeBoard.addEventListener("mouseup", () => {
+  infoBoard.addEventListener("mouseup", () => {
     clearChordPreview();
     endMouseLongPress();
   });
 
-  madeBoard.addEventListener("mouseleave", () => {
+  infoBoard.addEventListener("mouseleave", () => {
     clearChordPreview();
     cancelLongPress();
   });
 
-  madeBoard.addEventListener("contextmenu", (event) => {
+  infoBoard.addEventListener("contextmenu", (event) => {
     const cellEl = getBoardCellFromEventTarget(event.target);
     if (!cellEl) return;
     event.preventDefault();
@@ -1171,18 +1171,18 @@ if (madeBoard) {
     toggleFlag(c, r);
   });
 
-  madeBoard.addEventListener("touchstart", (event) => {
+  infoBoard.addEventListener("touchstart", (event) => {
     if (event.touches.length > 1) {
       clearChordPreview();
       cancelLongPress();
     }
   }, { passive: true });
-  madeBoard.addEventListener("touchmove", () => {
+  infoBoard.addEventListener("touchmove", () => {
     clearChordPreview();
     cancelLongPress();
   }, { passive: true });
-  madeBoard.addEventListener("touchend", cancelLongPress, { passive: true });
-  madeBoard.addEventListener("touchcancel", cancelLongPress, { passive: true });
+  infoBoard.addEventListener("touchend", cancelLongPress, { passive: true });
+  infoBoard.addEventListener("touchcancel", cancelLongPress, { passive: true });
 }
 
 if (resetButton instanceof HTMLButtonElement) {

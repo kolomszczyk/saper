@@ -3,60 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>made</title>
+    <title>Project Details</title>
     <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="favicon-flag-dark.svg" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="favicon-flag-light.svg" />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="made.css" />
+    <link rel="stylesheet" href="info.css" />
   </head>
   <body>
-    <div class="page made-page">
+    <div class="page info-page">
       <div class="top-actions">
         <a class="theme-button back-button" href="index.html" aria-label="Back to game page">Back to Game</a>
       </div>
 
-      <div class="made-window-pan">
-        <main class="window made-window" aria-label="Project information">
-          <div class="made-title-wrap">
-            <button type="button" id="made-reset" class="digits made-title-display" aria-label="Reset board">
+      <div class="info-window-pan">
+        <main class="window info-window" aria-label="Project information">
+          <div class="info-title-wrap">
+            <button type="button" id="info-reset" class="digits info-title-display" aria-label="Reset board">
               <span>SAPER</span>
             </button>
           </div>
 
-          <section class="board-shell made-board-shell" aria-label="Project details board">
-            <div class="made-board-zoom">
-              <div id="made-board-stack" class="made-board-stack">
-                <div id="made-board" class="board made-board" role="grid" aria-label="Minesweeper-style project details"></div>
-                <div id="made-board-overlays" class="made-board-overlays" aria-hidden="true"></div>
+          <section class="board-shell info-board-shell" aria-label="Project details board">
+            <div class="info-board-zoom">
+              <div id="info-board-stack" class="info-board-stack">
+                <div id="info-board" class="board info-board" role="grid" aria-label="Minesweeper-style project details"></div>
+                <div id="info-board-overlays" class="info-board-overlays" aria-hidden="true"></div>
               </div>
             </div>
           </section>
 
-          <div class="made-undo-wrap">
-            <button type="button" id="made-undo" class="cell made-undo" aria-label="Undo last move" disabled>↻</button>
+          <div class="info-undo-wrap">
+            <button type="button" id="info-undo" class="cell info-undo" aria-label="Undo last move" disabled>↻</button>
           </div>
         </main>
       </div>
 
-      <div class="made-window-pan made-settings-window-pan">
-        <main class="window made-window made-settings-window" aria-label="Settings">
-          <div class="made-title-wrap">
-            <button type="button" class="digits made-title-display" aria-label="Settings title" disabled>
+      <div class="info-window-pan info-settings-window-pan">
+        <main class="window info-window info-settings-window" aria-label="Settings">
+          <div class="info-title-wrap">
+            <button type="button" class="digits info-title-display" aria-label="Settings title" disabled>
               <span>SETTINGS</span>
             </button>
           </div>
 
-          <section class="board-shell made-settings-shell" aria-label="Settings options">
-            <form class="made-settings-form" action="#" method="get" onsubmit="return false;">
-              <div class="made-settings-layout">
-                <div class="made-settings-left-col">
-                  <div class="made-settings-pair">
-                    <div class="made-settings-row made-settings-field">
+          <section class="board-shell info-settings-shell" aria-label="Settings options">
+            <form class="info-settings-form" action="#" method="get" onsubmit="return false;">
+              <div class="info-settings-layout">
+                <div class="info-settings-left-col">
+                  <div class="info-settings-pair">
+                    <div class="info-settings-row info-settings-field">
                       <label for="map-width">Width</label>
                       <input
                         id="map-width"
-                        class="made-settings-digital-input"
+                        class="info-settings-digital-input"
                         type="text"
                         inputmode="numeric"
                         pattern="[0-9]*"
@@ -66,11 +66,11 @@
                       />
                     </div>
 
-                    <div class="made-settings-row made-settings-field">
+                    <div class="info-settings-row info-settings-field">
                       <label for="map-height">Height</label>
                       <input
                         id="map-height"
-                        class="made-settings-digital-input"
+                        class="info-settings-digital-input"
                         type="text"
                         inputmode="numeric"
                         pattern="[0-9]*"
@@ -81,27 +81,27 @@
                     </div>
                   </div>
 
-                  <div class="made-settings-row made-settings-field made-settings-checkbox-field">
+                  <div class="info-settings-row info-settings-field info-settings-checkbox-field">
                     <label for="custom-map">Custom map</label>
-                    <div class="made-settings-checkbox-display">
-                      <label class="made-settings-switch" for="custom-map" aria-label="Toggle custom map">
+                    <div class="info-settings-checkbox-display">
+                      <label class="info-settings-switch" for="custom-map" aria-label="Toggle custom map">
                         <input id="custom-map" type="checkbox" />
-                        <span class="made-settings-switch-track" aria-hidden="true">
-                          <span class="made-settings-switch-label made-settings-switch-label-on">On</span>
-                          <span class="made-settings-switch-label made-settings-switch-label-off">Off</span>
-                          <span class="made-settings-switch-thumb"></span>
+                        <span class="info-settings-switch-track" aria-hidden="true">
+                          <span class="info-settings-switch-label info-settings-switch-label-on">On</span>
+                          <span class="info-settings-switch-label info-settings-switch-label-off">Off</span>
+                          <span class="info-settings-switch-thumb"></span>
                         </span>
                       </label>
                     </div>
                   </div>
                 </div>
 
-                <div class="made-settings-right-col">
-                  <div class="made-settings-row made-settings-field made-settings-bombs-field">
+                <div class="info-settings-right-col">
+                  <div class="info-settings-row info-settings-field info-settings-bombs-field">
                     <label for="bomb-count">Bomb count</label>
                     <input
                       id="bomb-count"
-                      class="made-settings-digital-input"
+                      class="info-settings-digital-input"
                       type="text"
                       inputmode="numeric"
                       pattern="[0-9]*"
@@ -111,11 +111,11 @@
                     />
                   </div>
 
-                  <div class="made-settings-row made-settings-field made-settings-games-field">
+                  <div class="info-settings-row info-settings-field info-settings-games-field">
                     <label for="games-per-day">Games per day</label>
                     <input
                       id="games-per-day"
-                      class="made-settings-digital-input"
+                      class="info-settings-digital-input"
                       type="text"
                       inputmode="numeric"
                       pattern="[0-9]*"
@@ -127,8 +127,8 @@
                 </div>
               </div>
 
-              <div class="made-settings-actions">
-                <button type="button" class="theme-button made-settings-save">
+              <div class="info-settings-actions">
+                <button type="button" class="theme-button info-settings-save">
                   Save
                 </button>
               </div>
@@ -138,7 +138,7 @@
         </main>
       </div>
 
-      <section class="theme-picker made-theme-picker" aria-label="Theme selection">
+      <section class="theme-picker info-theme-picker" aria-label="Theme selection">
         <button type="button" class="theme-button is-active" data-theme="dark" aria-pressed="true">
           Dark
         </button>
@@ -152,7 +152,7 @@
     <script src="shared-daily-game-limit.js"></script>
     <script src="shared-board-input.js"></script>
     <script src="shared-minesweeper-utils.js"></script>
-    <script src="made.js"></script>
-    <script src="made-settings-mock.js"></script>
+    <script src="info.js"></script>
+    <script src="info-settings-mock.js"></script>
   </body>
 </html>
