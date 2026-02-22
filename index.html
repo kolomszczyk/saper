@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saper</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <nav class="top-menu" aria-label="Menu">
+        <a href="#">Gra</a>
+        <a href="#">Opcje</a>
+        <a href="#">Pomoc</a>
+      </nav>
+
+      <main class="window" aria-label="Saper">
+        <section class="controls" aria-label="Ustawienia gry">
+          <label for="difficulty">Poziom:</label>
+          <select id="difficulty">
+            <option value="easy">Latwy (9x9, 10 min)</option>
+            <option value="medium" selected>Sredni (16x16, 40 min)</option>
+            <option value="hard">Trudny (16x30, 99 min)</option>
+          </select>
+        </section>
+
+        <section class="scorebar" aria-label="Status gry">
+          <div class="digits" aria-label="Licznik min"><span id="mine-counter">000</span></div>
+          <button id="new-game" type="button" class="face" aria-label="Nowa gra">🙂</button>
+          <div class="digits" aria-label="Timer"><span id="timer">000</span></div>
+        </section>
+
+        <section class="board-shell">
+          <div id="board" class="board" role="grid" aria-label="Plansza Sapera"></div>
+        </section>
+      </main>
+
+      <p id="message" class="message">Powodzenia!</p>
+      <p class="menu-line">Menu: Strona glowna - Zasady - Saper jako sport - O stronie</p>
+      <h1 class="headline">Saper - graj online!</h1>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

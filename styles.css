@@ -1,0 +1,237 @@
+:root {
+  --bg: #bcbcbc;
+  --light: #ffffff;
+  --mid: #c6c6c6;
+  --dark: #7b7b7b;
+  --deep: #4f4f4f;
+  --digit-bg: #111;
+  --digit-red: #ff2a2a;
+  --flag-url: url("./flag.svg");
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Times New Roman", serif;
+  background: var(--bg);
+  color: #000;
+  padding: 18px 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.page {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.top-menu {
+  display: flex;
+  gap: 34px;
+  margin: 0 0 10px 38px;
+  font-size: 34px;
+}
+
+.top-menu a {
+  color: #111;
+  text-decoration: none;
+}
+
+.top-menu a:hover {
+  text-decoration: underline;
+}
+
+.window {
+  margin-left: 38px;
+  width: fit-content;
+  background: var(--mid);
+  border-top: 3px solid var(--light);
+  border-left: 3px solid var(--light);
+  border-right: 3px solid var(--dark);
+  border-bottom: 3px solid var(--dark);
+  padding: 10px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+select {
+  border: 2px solid;
+  border-color: var(--dark) var(--light) var(--light) var(--dark);
+  padding: 2px 4px;
+  font-size: 13px;
+  background: #e1e1e1;
+}
+
+.scorebar {
+  display: grid;
+  grid-template-columns: 74px 48px 74px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--mid);
+  border-top: 3px solid var(--dark);
+  border-left: 3px solid var(--dark);
+  border-right: 3px solid var(--light);
+  border-bottom: 3px solid var(--light);
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.digits {
+  min-height: 42px;
+  background: var(--digit-bg);
+  border-top: 2px solid var(--deep);
+  border-left: 2px solid var(--deep);
+  border-right: 2px solid #e4e4e4;
+  border-bottom: 2px solid #e4e4e4;
+  display: grid;
+  place-items: center;
+}
+
+.digits span {
+  font-family: "Digital-7", "DS-Digital", "Seven Segment", "Orbitron", "Courier New", monospace;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--digit-red);
+  letter-spacing: 1px;
+  font-weight: 900;
+  text-shadow: 0 0 2px #ff1c1c, 0 0 8px rgba(255, 35, 35, 0.55);
+}
+
+.face {
+  width: 44px;
+  height: 44px;
+  font-size: 25px;
+  border: 3px solid;
+  border-color: var(--light) var(--dark) var(--dark) var(--light);
+  background: #efefef;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.face:active {
+  border-color: var(--dark) var(--light) var(--light) var(--dark);
+}
+
+.board-shell {
+  background: var(--mid);
+  border-top: 3px solid var(--dark);
+  border-left: 3px solid var(--dark);
+  border-right: 3px solid var(--light);
+  border-bottom: 3px solid var(--light);
+  padding: 6px;
+  overflow: auto;
+}
+
+.board {
+  display: grid;
+  gap: 0;
+  width: fit-content;
+}
+
+.cell {
+  width: 24px;
+  height: 24px;
+  border: 2px solid;
+  border-color: var(--light) var(--dark) var(--dark) var(--light);
+  background: #bdbdbd;
+  display: grid;
+  place-items: center;
+  font-family: "Arial", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cell:focus {
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.cell.open {
+  border: 1px solid #8b8b8b;
+  background: #c7c7c7;
+  cursor: default;
+}
+
+.cell.mine {
+  background: #df6767;
+  color: #000;
+}
+
+.cell.flagged {
+  color: transparent;
+  background-color: #bdbdbd;
+  background-image: var(--flag-url);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.n1 { color: #0000ff; }
+.n2 { color: #008000; }
+.n3 { color: #ff0000; }
+.n4 { color: #000080; }
+.n5 { color: #800000; }
+.n6 { color: #008080; }
+.n7 { color: #000000; }
+.n8 { color: #808080; }
+
+.message {
+  margin: 10px 0 0 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.message.win {
+  color: #1d7a19;
+}
+
+.message.lose {
+  color: #a50000;
+}
+
+.menu-line {
+  margin: 10px 0 0;
+  font-size: 38px;
+  font-weight: 700;
+}
+
+.headline {
+  margin: 10px 0 0;
+  font-size: 58px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .top-menu,
+  .window {
+    margin-left: 0;
+  }
+
+  .top-menu {
+    font-size: 26px;
+    gap: 22px;
+  }
+
+  .menu-line {
+    font-size: 26px;
+  }
+
+  .headline {
+    font-size: 42px;
+  }
+}
