@@ -6,6 +6,7 @@ const DIFFICULTIES = {
 
 const COOKIE_SETTINGS = "saper_settings";
 const COOKIE_STATE = "saper_state";
+const COOKIE_UNDO_STATE = "saper_undo_state";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const THEMES = {
   dark: true,
@@ -75,6 +76,10 @@ function getCookie(name) {
     }
   }
   return "";
+}
+
+function clearCookie(name) {
+  setCookie(name, "", 0);
 }
 
 function saveSettings() {
@@ -439,10 +444,57 @@ function buildStatePayload() {
   };
 }
 
+function isValidSerializedState(saved, expectedRows, expectedCols) {
+  const size = Number(expectedRows) * Number(expectedCols);
+  return (
+    Number.isInteger(size) &&
+    size > 0 &&
+    typeof saved?.mines === "string" &&
+    typeof saved?.open === "string" &&
+    typeof saved?.flags === "string" &&
+    saved.mines.length === size &&
+    saved.open.length === size &&
+    saved.flags.length === size
+  );
+}
+
 function captureUndoState() {
   if (!rows || !cols || !grid.length || gameOver) return;
   undoState = buildStatePayload();
   updateReplayButton();
+}
+
+function saveUndoState() {
+  if (!undoState) {
+    clearCookie(COOKIE_UNDO_STATE);
+    return;
+  }
+  setCookie(COOKIE_UNDO_STATE, JSON.stringify(undoState));
+}
+
+function restoreUndoState(expectedDifficulty, expectedRows, expectedCols, expectedMines) {
+  undoState = null;
+
+  const raw = getCookie(COOKIE_UNDO_STATE);
+  if (!raw) return;
+
+  try {
+    const savedUndo = JSON.parse(raw);
+    if (
+      !savedUndo ||
+      savedUndo.v !== 1 ||
+      savedUndo.difficulty !== expectedDifficulty ||
+      Number(savedUndo.rows) !== expectedRows ||
+      Number(savedUndo.cols) !== expectedCols ||
+      Number(savedUndo.mineCount) !== expectedMines ||
+      !isValidSerializedState(savedUndo, expectedRows, expectedCols)
+    ) {
+      return;
+    }
+    undoState = savedUndo;
+  } catch {
+    // Ignore invalid undo payload.
+  }
 }
 
 function applyStateSnapshot(saved) {
@@ -532,6 +584,7 @@ function saveGameState() {
   const payload = buildStatePayload();
 
   setCookie(COOKIE_STATE, JSON.stringify(payload));
+  saveUndoState();
   saveSettings();
 }
 
@@ -551,15 +604,7 @@ function restoreGameState() {
   }
 
   const config = DIFFICULTIES[saved.difficulty];
-  const size = config.rows * config.cols;
-  if (
-    typeof saved.mines !== "string" ||
-    typeof saved.open !== "string" ||
-    typeof saved.flags !== "string" ||
-    saved.mines.length !== size ||
-    saved.open.length !== size ||
-    saved.flags.length !== size
-  ) {
+  if (!isValidSerializedState(saved, config.rows, config.cols)) {
     return false;
   }
 
@@ -577,6 +622,7 @@ function restoreGameState() {
       : saved.messageClass === "win" || saved.messageClass === "lose"
         ? saved.messageClass
         : "idle";
+  restoreUndoState(saved.difficulty, config.rows, config.cols, config.mines);
 
   createGrid();
   renderBoard();
