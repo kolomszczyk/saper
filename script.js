@@ -308,13 +308,19 @@ function loadSettings() {
 
 function syncCustomDifficultyAvailability() {
   const customBtn = difficultyButtons.find((btn) => btn.dataset.difficulty === CUSTOM_DIFFICULTY_KEY);
+  const syncDifficultyPickerLayout = () => {
+    if (!difficultyPickerEl) return;
+    difficultyPickerEl.classList.toggle("has-custom", Boolean(customBtn && !customBtn.hidden));
+  };
   if (!customBtn) {
+    syncDifficultyPickerLayout();
     difficultyPickerEl?.classList.add("is-ready");
     return;
   }
   if (customBoardConfig) {
     customBtn.disabled = true;
     customBtn.setAttribute("aria-disabled", "true");
+    syncDifficultyPickerLayout();
     difficultyPickerEl?.classList.add("is-ready");
     return;
   }
@@ -330,6 +336,7 @@ function syncCustomDifficultyAvailability() {
     syncDifficultyButtons();
   }
 
+  syncDifficultyPickerLayout();
   difficultyPickerEl?.classList.add("is-ready");
 }
 

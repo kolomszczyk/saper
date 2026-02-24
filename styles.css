@@ -542,6 +542,13 @@ body {
   .board-shell.is-mobile-fitted {
     overflow: hidden auto;
   }
+
+  .difficulty-picker.has-custom {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 96px));
+    justify-content: center;
+    gap: 12px;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) {
