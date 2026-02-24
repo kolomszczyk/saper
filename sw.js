@@ -1,7 +1,8 @@
-const CACHE_NAME = "saper-app-v1";
+const CACHE_NAME = "saper-app-v2";
 const APP_SHELL_FILES = [
   "./index.html",
   "./info.html",
+  "./manifest.webmanifest",
   "./styles.css",
   "./info.css",
   "./script.js",
@@ -18,6 +19,10 @@ const APP_SHELL_FILES = [
   "./cross.svg",
   "./favicon-flag-light.svg",
   "./favicon-flag-dark.svg",
+  "./apple-touch-icon.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
 ];
 
 self.addEventListener("install", (event) => {
