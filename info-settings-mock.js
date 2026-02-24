@@ -13,6 +13,9 @@
   const bombCountInput = document.getElementById("bomb-count");
   const gamesPerDayInput = document.getElementById("games-per-day");
   const saveButton = document.querySelector(".info-settings-save");
+  const installSection = document.getElementById("pwa-install-section");
+  const installButton = document.getElementById("install-app-button");
+  const installNote = document.getElementById("install-app-note");
   const customMapSwitch = customMapToggle?.closest(".info-settings-switch");
   const leftColumn = document.querySelector(".info-settings-left-col");
   const bombCountField = document.querySelector(".info-settings-bombs-field");
@@ -23,6 +26,7 @@
     document.getElementById("map-height"),
     document.getElementById("bomb-count"),
   ].filter(Boolean);
+  let deferredInstallPrompt = null;
 
   if (!inputs.length) return;
 
@@ -180,4 +184,82 @@
       }, SAVE_PRESSED_MS);
     });
   }
+
+  const isIosDevice = () => {
+    const ua = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    const touchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return /iPhone|iPad|iPod/i.test(ua) || touchMac;
+  };
+
+  const isStandaloneMode = () => (
+    window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true
+  );
+
+  const updateInstallUi = () => {
+    if (!installSection || !installNote || !installButton) return;
+
+    const standalone = isStandaloneMode();
+    const ios = isIosDevice();
+
+    installSection.hidden = false;
+    installButton.hidden = true;
+    installButton.disabled = false;
+    installNote.hidden = false;
+
+    if (standalone) {
+      installNote.textContent = "App is already installed on this device.";
+      return;
+    }
+
+    if (deferredInstallPrompt) {
+      installButton.hidden = false;
+      installNote.textContent = "Install for quick launch and offline play after first online visit.";
+      return;
+    }
+
+    if (ios) {
+      installNote.textContent = "iPhone/iPad: open in Safari, tap Share, then Add to Home Screen.";
+      return;
+    }
+
+    installNote.textContent = "Install option appears on supported browsers over HTTPS after the page finishes loading.";
+  };
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    updateInstallUi();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    updateInstallUi();
+  });
+
+  if (installButton) {
+    installButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      if (!deferredInstallPrompt) {
+        updateInstallUi();
+        return;
+      }
+
+      installButton.disabled = true;
+      try {
+        deferredInstallPrompt.prompt();
+        if (deferredInstallPrompt.userChoice) {
+          await deferredInstallPrompt.userChoice;
+        }
+      } catch {
+        // Ignore prompt errors (dismissed/unsupported edge cases).
+      } finally {
+        deferredInstallPrompt = null;
+        installButton.disabled = false;
+        updateInstallUi();
+      }
+    });
+  }
+
+  updateInstallUi();
 })();

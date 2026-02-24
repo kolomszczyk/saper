@@ -403,6 +403,33 @@
   outline: none;
 }
 
+.info-settings-install {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--mid);
+  border-top: 1px solid var(--dark);
+  border-left: 1px solid var(--dark);
+  border-right: 1px solid var(--light);
+  border-bottom: 1px solid var(--light);
+}
+
+.info-settings-install-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.info-settings-install-button {
+  min-width: 148px;
+}
+
+.info-settings-install-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--body-text);
+}
+
 .info-board-zoom {
   width: fit-content;
   height: fit-content;
@@ -894,6 +921,15 @@
 
   .info-settings-actions {
     margin-top: 22px;
+  }
+
+  .info-settings-install {
+    margin-top: 12px;
+    padding: 8px 10px;
+  }
+
+  .info-settings-install-note {
+    font-size: 11px;
   }
 
   .info-board-overlay {
