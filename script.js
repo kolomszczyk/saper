@@ -44,10 +44,19 @@ const {
   forEachBitFieldCell,
   hasValidBitFieldLengths,
   neighborsByBounds,
+  preloadImageAssets,
   renderBaseCellVisual,
   runChordReveal,
   serializeBitFields,
 } = window.sharedMinesweeperUtils;
+const SVG_ASSETS_TO_PRELOAD = [
+  "./bomb.svg",
+  "./bomb-black.svg",
+  "./flag.svg",
+  "./cross.svg",
+  "./favicon-flag-light.svg",
+  "./favicon-flag-dark.svg",
+];
 let grid = [];
 let rows = 0;
 let cols = 0;
@@ -1176,6 +1185,7 @@ for (const btn of themeButtons) {
 loadSettings();
 syncThemeButtons();
 applyThemeSelection();
+preloadImageAssets?.(SVG_ASSETS_TO_PRELOAD);
 if (shouldBlockNewDailyGame()) {
   updateCounters();
 } else if (!restoreGameState()) {

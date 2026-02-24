@@ -262,6 +262,34 @@
     return fieldNames.every((fieldName) => isValidCoordList(payload?.[fieldName], cols, rows));
   }
 
+  let preloadedImageAssets = null;
+
+  function preloadImageAssets(assetPaths) {
+    if (!Array.isArray(assetPaths) || assetPaths.length === 0) return [];
+    if (typeof Image !== "function") return [];
+
+    if (!preloadedImageAssets) {
+      preloadedImageAssets = new Map();
+    }
+
+    const loadedUrls = [];
+    for (const assetPath of assetPaths) {
+      if (typeof assetPath !== "string" || assetPath.length === 0) continue;
+      const assetUrl = new URL(assetPath, globalScope.location?.href ?? "/").href;
+      if (preloadedImageAssets.has(assetUrl)) {
+        loadedUrls.push(assetUrl);
+        continue;
+      }
+      const img = new Image();
+      img.decoding = "async";
+      img.src = assetUrl;
+      preloadedImageAssets.set(assetUrl, img);
+      loadedUrls.push(assetUrl);
+    }
+
+    return loadedUrls;
+  }
+
   globalScope.sharedMinesweeperUtils = {
     collectChordPreviewCoords,
     collectCoordPairs,
@@ -276,6 +304,7 @@
     isValidCoordList,
     isValidCoordPair,
     neighborsByBounds,
+    preloadImageAssets,
     removeClassFromTargets,
     renderBaseCellVisual,
     runChordReveal,

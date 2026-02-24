@@ -37,11 +37,20 @@ const {
   floodRevealZeroArea,
   hasCoordListFields,
   neighborsByBounds,
+  preloadImageAssets,
   removeClassFromTargets,
   renderBaseCellVisual,
   runChordReveal,
   shuffleInPlace,
 } = window.sharedMinesweeperUtils;
+const SVG_ASSETS_TO_PRELOAD = [
+  "./bomb.svg",
+  "./bomb-black.svg",
+  "./flag.svg",
+  "./cross.svg",
+  "./favicon-flag-light.svg",
+  "./favicon-flag-dark.svg",
+];
 let revealAllMines = false;
 let gameFinished = false;
 let dailyLimitLocked = false;
@@ -1249,3 +1258,4 @@ window.addEventListener("saper:daily-limit-settings-saved", syncMadeBoardAfterDa
 
 startTheme = getSavedThemeFromSettings();
 setTheme(startTheme);
+preloadImageAssets?.(SVG_ASSETS_TO_PRELOAD);
