@@ -1,6 +1,6 @@
 (function attachSharedBoardInput(globalScope) {
   function createBoardInputState(options = {}) {
-    const longPressMs = Number(options.longPressMs) || 450;
+    const longPressMs = Number(options.longPressMs) || 5;
     const moveTolerance = Number(options.moveTolerance) || 4;
     const defaultSuppressMs = Number(options.suppressMs) || 1200;
 

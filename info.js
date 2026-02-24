@@ -52,6 +52,7 @@ const autoRevealUnderTextOnStart = true;
 const autoRevealExtraSafeClicksMin = 2;
 const autoRevealExtraSafeClicksMax = 8;
 const autoFlagAroundOpenAreaRatio = 0.8;
+const BOMB_TOUCH_FLAG_GUESS_CHANCE = 0.7;
 
 const staticMinePositions = [
   [2, 2], [4, 3], [6, 4],
@@ -186,6 +187,15 @@ function loadOrCreateMineLayout() {
 
 function key(c, r) {
   return `${c},${r}`;
+}
+
+function isSameOrNeighborPressedCell(c, r, pressedKey) {
+  if (!pressedKey) return false;
+  const [pressedCRaw, pressedRRaw] = String(pressedKey).split(",");
+  const pressedC = Number(pressedCRaw);
+  const pressedR = Number(pressedRRaw);
+  if (!Number.isFinite(pressedC) || !Number.isFinite(pressedR)) return false;
+  return Math.abs(pressedC - c) <= 1 && Math.abs(pressedR - r) <= 1;
 }
 
 function setCookie(name, value, maxAge = INFO_COOKIE_MAX_AGE) {
@@ -825,6 +835,9 @@ function startMouseLongPress(event, c, r) {
 }
 
 function updateMouseLongPress(event) {
+  if (event.pointerType === "touch" || event.pointerType === "pen") {
+    return;
+  }
   boardInput.updateLongPressMove(event);
 }
 
@@ -852,6 +865,22 @@ function onBoardPointerDown(event) {
 function onBoardPointerMove(event) {
   if (!event.isPrimary) return;
   if (event.pointerId !== boardInput.getPointerId()) return;
+  if (event.pointerType === "touch" || event.pointerType === "pen") {
+    const cellEl = getBoardCellFromEventTarget(event.target);
+    const pressedKey = boardInput.getPressedKey();
+    if (!cellEl || !pressedKey) {
+      clearChordPreview();
+      cancelLongPress();
+      return;
+    }
+    const c = Number(cellEl.dataset.c);
+    const r = Number(cellEl.dataset.r);
+    if (!isSameOrNeighborPressedCell(c, r, pressedKey)) {
+      clearChordPreview();
+      cancelLongPress();
+    }
+    return;
+  }
   updateMouseLongPress(event);
 }
 
@@ -877,7 +906,7 @@ function onBoardPointerUpOrCancel(event) {
   if (consumeSuppressedClick(c, r)) return;
 
   boardInput.suppressClickFor(key(c, r), 400);
-  openCell(c, r);
+  openCell(c, r, { touchTapGuess: true });
   if (event.cancelable) {
     event.preventDefault();
   }
@@ -955,7 +984,7 @@ function checkWin() {
   return true;
 }
 
-function openCell(c, r) {
+function openCell(c, r, options = {}) {
   if (dailyLimitLocked) return;
   if (gameFinished) return;
   const cell = state.get(key(c, r));
@@ -966,6 +995,10 @@ function openCell(c, r) {
     return;
   }
   if (cell.flagged) return;
+  if (options.touchTapGuess && cell.mine && Math.random() < BOMB_TOUCH_FLAG_GUESS_CHANCE) {
+    toggleFlag(c, r);
+    return;
+  }
   pushHistory();
 
   if (cell.mine) {
@@ -1177,8 +1210,22 @@ if (infoBoard) {
       cancelLongPress();
     }
   }, { passive: true });
-  infoBoard.addEventListener("touchmove", () => {
+  infoBoard.addEventListener("touchmove", (event) => {
+    const touch = event.touches?.[0];
+    if (touch) {
+      const touchedEl = document.elementFromPoint(touch.clientX, touch.clientY);
+      const touchedCell = getBoardCellFromEventTarget(touchedEl);
+      const pressedKey = boardInput.getPressedKey();
+      if (touchedCell && pressedKey) {
+        const c = Number(touchedCell.dataset.c);
+        const r = Number(touchedCell.dataset.r);
+        if (isSameOrNeighborPressedCell(c, r, pressedKey)) {
+          return;
+        }
+      }
+    }
     clearChordPreview();
+    // Anuluj long-press dopiero po zejściu palcem poza pierwszy klocek lub jego sąsiadów.
     cancelLongPress();
   }, { passive: true });
   infoBoard.addEventListener("touchend", cancelLongPress, { passive: true });

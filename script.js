@@ -62,6 +62,10 @@ let timerId = null;
 let chordPreviewCells = [];
 let undoState = null;
 let dailyLimitLocked = false;
+const BOMB_TOUCH_FLAG_GUESS_CHANCE = 0.7;
+const TOUCH_TAP_GUESS_WINDOW_MS = 800;
+let pendingTouchTapGuessKey = "";
+let pendingTouchTapGuessExpiresAt = 0;
 
 function parsePositiveInt(value) {
   const n = Number(value);
@@ -425,6 +429,32 @@ function cellKey(r, c) {
   return `${r},${c}`;
 }
 
+function setPendingTouchTapGuess(key) {
+  pendingTouchTapGuessKey = key;
+  pendingTouchTapGuessExpiresAt = performance.now() + TOUCH_TAP_GUESS_WINDOW_MS;
+}
+
+function consumePendingTouchTapGuess(key) {
+  if (!pendingTouchTapGuessExpiresAt || performance.now() > pendingTouchTapGuessExpiresAt) {
+    pendingTouchTapGuessKey = "";
+    pendingTouchTapGuessExpiresAt = 0;
+    return false;
+  }
+  if (pendingTouchTapGuessKey !== key) return false;
+  pendingTouchTapGuessKey = "";
+  pendingTouchTapGuessExpiresAt = 0;
+  return true;
+}
+
+function isSameOrNeighborPressedCell(r, c, pressedKey) {
+  if (!pressedKey) return false;
+  const [pressedRRaw, pressedCRaw] = String(pressedKey).split(",");
+  const pressedR = Number(pressedRRaw);
+  const pressedC = Number(pressedCRaw);
+  if (!Number.isFinite(pressedR) || !Number.isFinite(pressedC)) return false;
+  return Math.abs(pressedR - r) <= 1 && Math.abs(pressedC - c) <= 1;
+}
+
 function consumeSuppressedClick(r, c) {
   return boardInput.consumeSuppressedClick(cellKey(r, c));
 }
@@ -461,6 +491,18 @@ function onCellPointerDown(event, r, c) {
 
 function onCellPointerMove(event) {
   if (!event.isPrimary) return;
+  if (event.pointerType === "touch" || event.pointerType === "pen") {
+    const currentCell = event.currentTarget;
+    if (!(currentCell instanceof HTMLButtonElement)) return;
+    const pressedKey = boardInput.getPressedKey();
+    if (!pressedKey) return;
+    const r = Number(currentCell.dataset.row);
+    const c = Number(currentCell.dataset.col);
+    if (!isSameOrNeighborPressedCell(r, c, pressedKey)) {
+      cancelLongPress();
+    }
+    return;
+  }
   boardInput.updateLongPressMove(event);
 }
 
@@ -470,8 +512,19 @@ function onCellTouchStart(event) {
   }
 }
 
-function onCellTouchMove() {
-  // Priorytet dla przesuwania planszy jednym palcem: każdy ruch anuluje flagę z long-press.
+function onCellTouchMove(event) {
+  const pressedKey = boardInput.getPressedKey();
+  if (!pressedKey) return;
+  const touch = event.touches?.[0];
+  if (!touch) return;
+  const touchedEl = document.elementFromPoint(touch.clientX, touch.clientY);
+  const touchedCell = touchedEl instanceof Element ? touchedEl.closest(".cell") : null;
+  if (touchedCell instanceof HTMLButtonElement) {
+    const r = Number(touchedCell.dataset.row);
+    const c = Number(touchedCell.dataset.col);
+    if (isSameOrNeighborPressedCell(r, c, pressedKey)) return;
+  }
+  // Anuluj long-press dopiero po zejściu palcem poza pierwszy klocek lub jego sąsiadów.
   cancelLongPress();
 }
 
@@ -479,7 +532,15 @@ function onCellPointerUpOrCancel(event, r, c) {
   if (!event.isPrimary) return;
   const result = boardInput.endLongPress({ pointerId: event.pointerId, key: cellKey(r, c) });
   if (!result) return;
-  if (!result.wasLongPress) return;
+  if (!result.wasLongPress) {
+    if (
+      event.type === "pointerup" &&
+      (event.pointerType === "touch" || event.pointerType === "pen")
+    ) {
+      setPendingTouchTapGuess(cellKey(r, c));
+    }
+    return;
+  }
   if (event.cancelable) {
     event.preventDefault();
   }
@@ -974,6 +1035,7 @@ function onLeftClick(r, c) {
   if (dailyLimitLocked) return;
   if (gameOver) return;
   clearChordPreview();
+  const touchTapGuess = consumePendingTouchTapGuess(cellKey(r, c));
   const cell = grid[r][c];
   if (cell.open) {
     captureUndoState();
@@ -994,6 +1056,11 @@ function onLeftClick(r, c) {
     started = true;
     placeMines(r, c);
     startTimer();
+  }
+
+  if (touchTapGuess && started && cell.mine && Math.random() < BOMB_TOUCH_FLAG_GUESS_CHANCE) {
+    onRightClick(r, c);
+    return;
   }
 
   revealCell(r, c);
