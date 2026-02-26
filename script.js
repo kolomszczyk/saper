@@ -580,17 +580,10 @@ function updateBoardMobileScale() {
       parseFloat(shellStyles.paddingRight || "0") +
       parseFloat(shellStyles.borderLeftWidth || "0") +
       parseFloat(shellStyles.borderRightWidth || "0");
-    const shellInsetY =
-      parseFloat(shellStyles.paddingTop || "0") +
-      parseFloat(shellStyles.paddingBottom || "0") +
-      parseFloat(shellStyles.borderTopWidth || "0") +
-      parseFloat(shellStyles.borderBottomWidth || "0");
-
     const availableWidth = Math.max(120, window.innerWidth - bodyPadX - shellInsetX);
-    const shellTop = boardShellEl.getBoundingClientRect().top;
-    const availableHeight = Math.max(120, window.innerHeight - shellTop - 16 - shellInsetY);
-
-    scale = Math.min(1, availableWidth / boardWidth, availableHeight / boardHeight);
+    // On tall custom boards, fitting by viewport height makes cells microscopic.
+    // Fit width on mobile and let the shell scroll vertically.
+    scale = Math.min(1, availableWidth / boardWidth);
   }
 
   boardZoomEl.style.width = `${Math.ceil(boardWidth * scale)}px`;
