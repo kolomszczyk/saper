@@ -61,7 +61,6 @@ const autoRevealUnderTextOnStart = true;
 const autoRevealExtraSafeClicksMin = 2;
 const autoRevealExtraSafeClicksMax = 8;
 const autoFlagAroundOpenAreaRatio = 0.8;
-const BOMB_TOUCH_FLAG_GUESS_CHANCE = 0.7;
 
 const staticMinePositions = [
   [2, 2], [4, 3], [6, 4],
@@ -1004,10 +1003,6 @@ function openCell(c, r, options = {}) {
     return;
   }
   if (cell.flagged) return;
-  if (options.touchTapGuess && cell.mine && Math.random() < BOMB_TOUCH_FLAG_GUESS_CHANCE) {
-    toggleFlag(c, r);
-    return;
-  }
   pushHistory();
 
   if (cell.mine) {

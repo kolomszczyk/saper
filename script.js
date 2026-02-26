@@ -71,7 +71,6 @@ let timerId = null;
 let chordPreviewCells = [];
 let undoState = null;
 let dailyLimitLocked = false;
-const BOMB_TOUCH_FLAG_GUESS_CHANCE = 0.7;
 const TOUCH_TAP_GUESS_WINDOW_MS = 800;
 let pendingTouchTapGuessKey = "";
 let pendingTouchTapGuessExpiresAt = 0;
@@ -1044,7 +1043,7 @@ function onLeftClick(r, c) {
   if (dailyLimitLocked) return;
   if (gameOver) return;
   clearChordPreview();
-  const touchTapGuess = consumePendingTouchTapGuess(cellKey(r, c));
+  consumePendingTouchTapGuess(cellKey(r, c));
   const cell = grid[r][c];
   if (cell.open) {
     captureUndoState();
@@ -1065,11 +1064,6 @@ function onLeftClick(r, c) {
     started = true;
     placeMines(r, c);
     startTimer();
-  }
-
-  if (touchTapGuess && started && cell.mine && Math.random() < BOMB_TOUCH_FLAG_GUESS_CHANCE) {
-    onRightClick(r, c);
-    return;
   }
 
   revealCell(r, c);
