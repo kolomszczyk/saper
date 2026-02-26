@@ -1017,14 +1017,6 @@
   .info-board-overlay.is-text-outline {
     font-size: 18px;
     font-weight: 900;
-    -webkit-text-stroke: 0.35px rgba(255, 28, 28, 0.95);
-    text-shadow:
-      0 0 1px #ff1c1c,
-      0 0 2px #ff1c1c,
-      1px 0 0 rgba(255, 28, 28, 0.7),
-      -1px 0 0 rgba(255, 28, 28, 0.7),
-      0 0 8px rgba(255, 35, 35, 0.55),
-      0 0 12px rgba(255, 35, 35, 0.3);
   }
 
   .info-board-overlay.is-logo svg {
@@ -1063,14 +1055,6 @@
   .info-board-overlay.is-text-outline {
     font-size: 16px;
     font-weight: 900;
-    -webkit-text-stroke: 0.35px rgba(255, 28, 28, 0.95);
-    text-shadow:
-      0 0 1px #ff1c1c,
-      0 0 2px #ff1c1c,
-      1px 0 0 rgba(255, 28, 28, 0.7),
-      -1px 0 0 rgba(255, 28, 28, 0.7),
-      0 0 8px rgba(255, 35, 35, 0.55),
-      0 0 12px rgba(255, 35, 35, 0.3);
   }
 
   .info-board-overlay.is-logo svg {
