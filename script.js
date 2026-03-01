@@ -507,6 +507,13 @@ function onCellPointerDown(event, r, c) {
 function onCellPointerMove(event) {
   if (!event.isPrimary) return;
   if (event.pointerType === "touch" || event.pointerType === "pen") {
+    const pressedKeyBeforeMove = boardInput.getPressedKey();
+    boardInput.updateLongPressMove(event);
+    if (pressedKeyBeforeMove && !boardInput.getPressedKey()) {
+      boardInput.suppressClickFor(pressedKeyBeforeMove, 400);
+      clearChordPreview();
+      return;
+    }
     const currentCell = event.currentTarget;
     if (!(currentCell instanceof HTMLButtonElement)) return;
     const pressedKey = boardInput.getPressedKey();
@@ -514,6 +521,7 @@ function onCellPointerMove(event) {
     const r = Number(currentCell.dataset.row);
     const c = Number(currentCell.dataset.col);
     if (!isSameOrNeighborPressedCell(r, c, pressedKey)) {
+      boardInput.suppressClickFor(pressedKey, 400);
       cancelLongPress();
     }
     return;
@@ -540,6 +548,7 @@ function onCellTouchMove(event) {
     if (isSameOrNeighborPressedCell(r, c, pressedKey)) return;
   }
   // Anuluj long-press dopiero po zejściu palcem poza pierwszy klocek lub jego sąsiadów.
+  boardInput.suppressClickFor(pressedKey, 400);
   cancelLongPress();
 }
 

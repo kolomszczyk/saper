@@ -382,7 +382,7 @@ body {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: auto;
+  touch-action: manipulation;
 }
 
 .cell:focus,
@@ -549,8 +549,9 @@ body {
   }
 
   .board-shell {
-    overflow-x: hidden;
+    overflow-x: auto;
     overflow-y: auto;
+    overscroll-behavior: auto;
   }
 
   .board-shell.is-mobile-fitted {

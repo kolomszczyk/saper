@@ -874,6 +874,7 @@ function onBoardPointerMove(event) {
   if (!event.isPrimary) return;
   if (event.pointerId !== boardInput.getPointerId()) return;
   if (event.pointerType === "touch" || event.pointerType === "pen") {
+    boardInput.updateLongPressMove(event);
     const cellEl = getBoardCellFromEventTarget(event.target);
     const pressedKey = boardInput.getPressedKey();
     if (!cellEl || !pressedKey) {
