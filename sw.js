@@ -1,4 +1,4 @@
-const CACHE_NAME = "saper-app-v2";
+const CACHE_NAME = "saper-app-v3";
 const APP_SHELL_FILES = [
   "./index.html",
   "./info.html",

@@ -914,7 +914,7 @@ function onBoardPointerUpOrCancel(event) {
   if (consumeSuppressedClick(c, r)) return;
 
   boardInput.suppressClickFor(key(c, r), 400);
-  openCell(c, r, { touchTapGuess: true });
+  openCell(c, r);
   if (event.cancelable) {
     event.preventDefault();
   }
@@ -992,7 +992,7 @@ function checkWin() {
   return true;
 }
 
-function openCell(c, r, options = {}) {
+function openCell(c, r) {
   if (dailyLimitLocked) return;
   if (gameFinished) return;
   const cell = state.get(key(c, r));
