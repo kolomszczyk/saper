@@ -27,7 +27,8 @@ const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
 const CELL_SIZE = 24;
-const LONG_PRESS_MS = 450;
+const LONG_PRESS_MS =
+  window.matchMedia("(hover: none) and (pointer: coarse)").matches ? 1.25 : 450;
 const LONG_PRESS_MOVE_TOLERANCE = 4;
 const boardInput = window.createBoardInputState({
   longPressMs: LONG_PRESS_MS,
