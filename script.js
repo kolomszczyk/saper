@@ -1140,6 +1140,36 @@ function newGame() {
 window.addEventListener("mouseup", clearChordPreview);
 document.addEventListener("visibilitychange", syncTimerWithPageVisibility);
 boardShellEl?.addEventListener("scroll", cancelLongPress, { passive: true });
+boardShellEl?.addEventListener("wheel", (event) => {
+  if (window.innerWidth <= 900) return;
+  if (!boardShellEl) return;
+  if (event.ctrlKey) return;
+
+  const maxHorizontalScroll = boardShellEl.scrollWidth - boardShellEl.clientWidth;
+  const maxVerticalScroll = boardShellEl.scrollHeight - boardShellEl.clientHeight;
+  const canScrollHorizontally = maxHorizontalScroll > 0;
+  const canScrollVertically = maxVerticalScroll > 0;
+  if (!canScrollHorizontally && !canScrollVertically) return;
+
+  const prevLeft = boardShellEl.scrollLeft;
+  const prevTop = boardShellEl.scrollTop;
+  const deltaX = event.deltaX;
+  const deltaY = event.deltaY;
+
+  if (canScrollHorizontally && deltaX !== 0) {
+    boardShellEl.scrollLeft += deltaX;
+  }
+  if (canScrollVertically && deltaY !== 0) {
+    boardShellEl.scrollTop += deltaY;
+  } else if (canScrollHorizontally && deltaX === 0 && deltaY !== 0) {
+    boardShellEl.scrollLeft += deltaY;
+  }
+
+  const didMove = boardShellEl.scrollLeft !== prevLeft || boardShellEl.scrollTop !== prevTop;
+  if (didMove) {
+    event.preventDefault();
+  }
+}, { passive: false });
 window.addEventListener("resize", () => {
   requestAnimationFrame(updateBoardMobileScale);
 });

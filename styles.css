@@ -244,8 +244,8 @@ body {
   border-bottom: 3px solid var(--light);
   padding: 6px;
   overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior: contain;
+  overflow-y: auto;
+  overscroll-behavior: auto;
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
 }
