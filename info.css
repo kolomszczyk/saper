@@ -115,8 +115,11 @@
 }
 
 .info-settings-right-col {
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 14px;
+  justify-items: center;
+  align-content: center;
 }
 
 .info-settings-pair {
@@ -236,21 +239,31 @@
 
 .info-settings-games-field {
   margin-top: 0;
-  align-self: center;
   width: 100%;
   max-width: 150px;
   align-items: center;
+  grid-column: 1;
+}
+
+.info-settings-games-today-field {
+  margin-top: 0;
+  width: 100%;
+  max-width: 150px;
+  align-items: center;
+  grid-column: 2;
 }
 
 .info-settings-bombs-field {
   margin-top: -40px;
-  align-self: center;
   width: 100%;
   max-width: 150px;
   align-items: center;
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 
 .info-settings-games-field,
+.info-settings-games-today-field,
 .info-settings-bombs-field {
   padding: 6px 5px 9px;
   background: var(--mid);
@@ -261,6 +274,7 @@
 }
 
 .info-settings-games-field .info-settings-digital-input,
+.info-settings-games-today-field .info-settings-digital-input,
 .info-settings-bombs-field .info-settings-digital-input {
   width: 5.2ch;
   min-width: calc(5.2ch + 22px);
@@ -268,6 +282,7 @@
 }
 
 .info-settings-games-field > label,
+.info-settings-games-today-field > label,
 .info-settings-bombs-field > label {
   text-align: center;
 }
@@ -875,16 +890,17 @@
     display: contents;
   }
 
-  .info-settings-bombs-field {
+  .info-settings-checkbox-field {
     order: 2;
+  }
+
+  .info-settings-bombs-field {
+    order: 3;
     margin-top: 0;
   }
 
-  .info-settings-checkbox-field {
-    order: 3;
-  }
-
-  .info-settings-games-field {
+  .info-settings-games-field,
+  .info-settings-games-today-field {
     order: 4;
   }
 
@@ -921,10 +937,17 @@
 
   .info-settings-games-field {
     margin-top: 0;
-    grid-column: 1 / -1;
-    justify-self: center;
-    width: min(100%, 180px);
-    max-width: 180px;
+    grid-column: auto;
+    width: 100%;
+    max-width: none;
+    align-items: center;
+  }
+
+  .info-settings-games-today-field {
+    margin-top: 0;
+    grid-column: auto;
+    width: 100%;
+    max-width: none;
     align-items: center;
   }
 
@@ -932,9 +955,12 @@
     width: 100%;
     max-width: none;
     align-items: center;
+    grid-column: auto;
+    justify-self: stretch;
   }
 
   .info-settings-games-field,
+  .info-settings-games-today-field,
   .info-settings-bombs-field {
     padding: 3px 3px 4px;
     border-top-width: 1px;
@@ -949,12 +975,14 @@
   }
 
   .info-settings-games-field > label,
+  .info-settings-games-today-field > label,
   .info-settings-bombs-field > label {
     width: 100%;
     text-align: center;
   }
 
   .info-settings-games-field .info-settings-digital-input,
+  .info-settings-games-today-field .info-settings-digital-input,
   .info-settings-bombs-field .info-settings-digital-input {
     width: 5ch;
     min-width: calc(5ch + 18px);

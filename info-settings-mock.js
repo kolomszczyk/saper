@@ -12,6 +12,7 @@
   const mapHeightInput = document.getElementById("map-height");
   const bombCountInput = document.getElementById("bomb-count");
   const gamesPerDayInput = document.getElementById("games-per-day");
+  const gamesPlayedTodayInput = document.getElementById("games-played-today");
   const saveButton = document.querySelector(".info-settings-save");
   const installSection = document.getElementById("pwa-install-section");
   const installButton = document.getElementById("install-app-button");
@@ -68,6 +69,14 @@
     moveCaretToEnd(input);
   };
 
+  const formatUsageDisplay = (value) => String(Math.max(0, Math.floor(Number(value) || 0))).slice(-DIGITS).padStart(DIGITS, "0");
+
+  const updateGamesPlayedToday = () => {
+    if (!gamesPlayedTodayInput || !dailyGameLimit?.getStatus) return;
+    const status = dailyGameLimit.getStatus();
+    gamesPlayedTodayInput.value = formatUsageDisplay(status?.count);
+  };
+
   for (const input of inputs) {
     applyFormattedValue(input);
 
@@ -117,6 +126,7 @@
     gamesPerDayInput.value = String(dailyGameLimit.getGamesPerDay());
     applyFormattedValue(gamesPerDayInput);
   }
+  updateGamesPlayedToday();
 
   const savedSettings = readSettings();
   if (customMapToggle && typeof savedSettings.customMapEnabled === "boolean") {
@@ -168,6 +178,7 @@
       window.dispatchEvent(new CustomEvent("saper:daily-limit-settings-saved", {
         detail: { gamesPerDay: savedLimit },
       }));
+      updateGamesPlayedToday();
     };
 
     saveButton.addEventListener("click", (event) => {
@@ -235,6 +246,12 @@
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
     updateInstallUi();
+  });
+
+  window.addEventListener("saper:daily-game-usage-updated", updateGamesPlayedToday);
+  window.addEventListener("focus", updateGamesPlayedToday);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) updateGamesPlayedToday();
   });
 
   if (installButton) {

@@ -95,22 +95,6 @@
                     </div>
                   </div>
 
-                  <div class="info-settings-row info-settings-field info-settings-checkbox-field">
-                    <label for="custom-map">Custom map</label>
-                    <div class="info-settings-checkbox-display">
-                      <label class="info-settings-switch" for="custom-map" aria-label="Toggle custom map">
-                        <input id="custom-map" type="checkbox" />
-                        <span class="info-settings-switch-track" aria-hidden="true">
-                          <span class="info-settings-switch-label info-settings-switch-label-on">On</span>
-                          <span class="info-settings-switch-label info-settings-switch-label-off">Off</span>
-                          <span class="info-settings-switch-thumb"></span>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="info-settings-right-col">
                   <div class="info-settings-row info-settings-field info-settings-bombs-field">
                     <label for="bomb-count">Bomb count</label>
                     <input
@@ -124,6 +108,22 @@
                       spellcheck="false"
                     />
                   </div>
+                </div>
+
+                <div class="info-settings-right-col">
+                  <div class="info-settings-row info-settings-field info-settings-checkbox-field">
+                    <label for="custom-map">Custom map</label>
+                    <div class="info-settings-checkbox-display">
+                      <label class="info-settings-switch" for="custom-map" aria-label="Toggle custom map">
+                        <input id="custom-map" type="checkbox" />
+                        <span class="info-settings-switch-track" aria-hidden="true">
+                          <span class="info-settings-switch-label info-settings-switch-label-on">On</span>
+                          <span class="info-settings-switch-label info-settings-switch-label-off">Off</span>
+                          <span class="info-settings-switch-thumb"></span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
 
                   <div class="info-settings-row info-settings-field info-settings-games-field">
                     <label for="games-per-day">Games per day</label>
@@ -136,6 +136,22 @@
                       value="500"
                       autocomplete="off"
                       spellcheck="false"
+                    />
+                  </div>
+
+                  <div class="info-settings-row info-settings-field info-settings-games-today-field">
+                    <label for="games-played-today">Games today</label>
+                    <input
+                      id="games-played-today"
+                      class="info-settings-digital-input"
+                      type="text"
+                      value="0000"
+                      autocomplete="off"
+                      spellcheck="false"
+                      readonly
+                      disabled
+                      aria-readonly="true"
+                      tabindex="-1"
                     />
                   </div>
                 </div>

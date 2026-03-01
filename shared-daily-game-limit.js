@@ -91,6 +91,19 @@
     };
   }
 
+  function notifyStatusUpdate(status) {
+    if (typeof globalScope.dispatchEvent !== "function" || typeof globalScope.CustomEvent !== "function") return;
+    globalScope.dispatchEvent(new globalScope.CustomEvent("saper:daily-game-usage-updated", {
+      detail: {
+        day: status.day,
+        count: status.count,
+        limit: status.limit,
+        remaining: status.remaining,
+        reached: status.reached,
+      },
+    }));
+  }
+
   function consumeGame() {
     const status = getStatus();
     if (status.reached) {
@@ -100,6 +113,7 @@
     const nextUsage = { day: status.day, count: status.count + 1 };
     writeUsage(nextUsage);
     const nextStatus = getStatus();
+    notifyStatusUpdate(nextStatus);
     return { ok: true, ...nextStatus };
   }
 
