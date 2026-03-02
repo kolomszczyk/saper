@@ -120,23 +120,27 @@ button:focus {
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--ui-font);
-  background: var(--body-background);
+  background: var(--mid);
   color: var(--body-text);
-  padding: 18px 14px;
+  padding: 0;
   display: flex;
   justify-content: center;
+  align-items: stretch;
 }
 
 .page {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 100dvh;
   margin: 0 auto;
+  padding: 18px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: var(--mid);
 }
 
 .top-menu {
@@ -157,9 +161,11 @@ body {
 
 .window {
   margin-left: 0;
-  width: fit-content;
-  max-width: calc(100vw - 28px);
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--mid);
   border-top: 3px solid var(--light);
   border-left: 3px solid var(--light);
@@ -182,7 +188,8 @@ body {
   display: grid;
   grid-template-columns: 74px 48px 74px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  width: 100%;
   gap: 10px;
   background: var(--mid);
   border-top: 3px solid var(--dark);
@@ -237,15 +244,19 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  flex: 0 1 auto;
+  min-height: 0;
   background: var(--mid);
   border-top: 3px solid var(--dark);
   border-left: 3px solid var(--dark);
   border-right: 3px solid var(--light);
   border-bottom: 3px solid var(--light);
   padding: 6px;
-  overflow-x: auto;
-  overflow-y: auto;
-  overscroll-behavior: auto;
+  height: auto;
+  max-height: none;
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
 }
@@ -253,6 +264,8 @@ body {
 .board-zoom {
   width: fit-content;
   height: fit-content;
+  margin-left: auto;
+  margin-right: auto;
   overflow: hidden;
 }
 
@@ -262,6 +275,7 @@ body {
 }
 
 .replay-wrap {
+  width: 100%;
   display: flex;
   justify-content: center;
   margin-top: 10px;
@@ -530,9 +544,49 @@ body {
 }
 
 @media (max-width: 900px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .page {
+    width: 100dvw;
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    align-items: stretch;
+  }
+
   .top-menu,
   .window {
     margin-left: 0;
+  }
+
+  .window {
+    width: calc(100dvw + 34px);
+    max-width: none;
+    margin-left: -17px;
+    margin-right: -17px;
+  }
+
+  .page.is-min-zoom {
+    width: 100dvw;
+    max-width: none;
+    padding: 0 14px;
+  }
+
+  .page.is-min-zoom .window {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .page.is-min-zoom .board-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .top-menu {
@@ -549,13 +603,9 @@ body {
   }
 
   .board-shell {
-    overflow-x: auto;
-    overflow-y: auto;
-    overscroll-behavior: auto;
-  }
-
-  .board-shell.is-mobile-fitted {
-    overflow: hidden auto;
+    overflow: auto;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
   }
 
   .difficulty-picker.has-custom {

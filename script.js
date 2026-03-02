@@ -17,6 +17,8 @@ const THEMES = {
 const boardEl = document.getElementById("board");
 const boardShellEl = document.querySelector(".board-shell");
 const boardZoomEl = document.querySelector(".board-zoom");
+const pageEl = document.querySelector(".page");
+const gameWindowEl = document.querySelector(".window");
 const mineCounterEl = document.getElementById("mine-counter");
 const timerEl = document.getElementById("timer");
 const difficultyEl = document.getElementById("difficulty");
@@ -26,7 +28,17 @@ const themeEl = document.getElementById("theme");
 const themeButtons = Array.from(document.querySelectorAll(".theme-button"));
 const newGameEl = document.getElementById("new-game");
 const replayEl = document.getElementById("replay-game");
+const zoomValueEl = document.getElementById("zoom-value");
 const CELL_SIZE = 24;
+const ABS_MIN_BOARD_ZOOM = 0.1;
+const MIN_BOARD_ZOOM = 0.5;
+const MAX_BOARD_ZOOM = 2;
+const BOARD_ZOOM_STEP = 0.1;
+const DEFAULT_BOARD_ZOOM = 1;
+const FULL_FIT_ZOOM_EPSILON = 0.002;
+const FULL_FIT_STATE_EPSILON = 0.01;
+const MOBILE_VIEWPORT_BREAKPOINT = 900;
+const MOBILE_FULL_FIT_GUTTER_X = 72;
 const LONG_PRESS_MS =
   window.matchMedia("(hover: none) and (pointer: coarse)").matches ? 1.25 : 450;
 const LONG_PRESS_MOVE_TOLERANCE = 4;
@@ -75,10 +87,299 @@ let dailyLimitLocked = false;
 const TOUCH_TAP_GUESS_WINDOW_MS = 800;
 let pendingTouchTapGuessKey = "";
 let pendingTouchTapGuessExpiresAt = 0;
+let boardZoom = DEFAULT_BOARD_ZOOM;
+let isPinchZooming = false;
+let pinchState = null;
+let suppressTapAfterPinchUntil = 0;
+let boardLayoutRafId = 0;
 
 function parsePositiveInt(value) {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function clampBoardZoom(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_BOARD_ZOOM;
+  return clamp(numeric, ABS_MIN_BOARD_ZOOM, MAX_BOARD_ZOOM);
+}
+
+function formatBoardZoomLabel(value) {
+  return `${Math.round(clampBoardZoom(value) * 100)}%`;
+}
+
+function updateZoomReadout() {
+  if (!zoomValueEl) return;
+  zoomValueEl.textContent = formatBoardZoomLabel(boardZoom);
+}
+
+function syncMinZoomLayoutState() {
+  const fullFitZoom = getFullBoardZoomFloor();
+  const isMinZoom = boardZoom <= fullFitZoom + FULL_FIT_STATE_EPSILON;
+  pageEl?.classList.toggle("is-min-zoom", isMinZoom);
+  gameWindowEl?.classList.toggle("is-min-zoom", isMinZoom);
+  boardShellEl?.classList.toggle("is-min-zoom", isMinZoom);
+}
+
+function clearPendingTouchTapGuess() {
+  pendingTouchTapGuessKey = "";
+  pendingTouchTapGuessExpiresAt = 0;
+}
+
+function suppressTapAfterPinch(durationMs = 260) {
+  suppressTapAfterPinchUntil = performance.now() + durationMs;
+}
+
+function isTapSuppressedAfterPinch() {
+  return suppressTapAfterPinchUntil > performance.now();
+}
+
+function clampBoardShellHeightToViewport() {
+  if (!boardShellEl) return;
+  if (!rows || !cols) {
+    boardShellEl.style.height = "auto";
+    boardShellEl.style.maxHeight = "none";
+    return;
+  }
+
+  const shellStyles = getComputedStyle(boardShellEl);
+  const shellInsetY =
+    parseFloat(shellStyles.paddingTop || "0") +
+    parseFloat(shellStyles.paddingBottom || "0") +
+    parseFloat(shellStyles.borderTopWidth || "0") +
+    parseFloat(shellStyles.borderBottomWidth || "0");
+  const boardHeight = rows * CELL_SIZE * boardZoom;
+  const targetHeight = Math.max(140, boardHeight + shellInsetY);
+
+  boardShellEl.style.height = `${targetHeight}px`;
+  boardShellEl.style.maxHeight = "none";
+}
+
+function getBoardViewportSize() {
+  if (!boardShellEl) {
+    return { width: 0, height: 0 };
+  }
+  const shellStyles = getComputedStyle(boardShellEl);
+  const padX =
+    parseFloat(shellStyles.paddingLeft || "0") +
+    parseFloat(shellStyles.paddingRight || "0");
+  const padY =
+    parseFloat(shellStyles.paddingTop || "0") +
+    parseFloat(shellStyles.paddingBottom || "0");
+  return {
+    width: Math.max(40, boardShellEl.clientWidth - padX),
+    height: Math.max(40, boardShellEl.clientHeight - padY),
+  };
+}
+
+function getBoardFitViewportSize() {
+  if (!boardShellEl) {
+    return { width: 0, height: 0 };
+  }
+  const baseViewport = getBoardViewportSize();
+  let fitWidth = baseViewport.width;
+  if (window.innerWidth <= MOBILE_VIEWPORT_BREAKPOINT) {
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    fitWidth = Math.max(40, Math.floor(viewportWidth - MOBILE_FULL_FIT_GUTTER_X));
+  }
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  const shellTop = boardShellEl.getBoundingClientRect().top;
+  const availableHeight = Math.max(40, Math.floor(viewportHeight - shellTop - 8));
+  return {
+    width: Math.min(baseViewport.width, fitWidth),
+    height: availableHeight,
+  };
+}
+
+function getFullBoardZoomFloor() {
+  if (!boardShellEl || !rows || !cols) return MIN_BOARD_ZOOM;
+  const boardWidth = cols * CELL_SIZE;
+  const boardHeight = rows * CELL_SIZE;
+  if (!boardWidth || !boardHeight) return MIN_BOARD_ZOOM;
+  const viewport = getBoardFitViewportSize();
+  const fitZoom = Math.min(viewport.width / boardWidth, viewport.height / boardHeight) - FULL_FIT_ZOOM_EPSILON;
+  return clamp(Math.min(fitZoom, DEFAULT_BOARD_ZOOM), ABS_MIN_BOARD_ZOOM, MAX_BOARD_ZOOM);
+}
+
+function fitBoardToViewport() {
+  if (!boardShellEl || !rows || !cols) return;
+  const fitZoom = getFullBoardZoomFloor();
+  setBoardZoom(fitZoom, {
+    anchorClientX: boardShellEl.getBoundingClientRect().left + boardShellEl.clientWidth / 2,
+    anchorClientY: boardShellEl.getBoundingClientRect().top + boardShellEl.clientHeight / 2,
+    minZoom: fitZoom,
+  });
+}
+
+function applyBoardLayout() {
+  if (!boardShellEl || !boardZoomEl) return;
+  clampBoardShellHeightToViewport();
+  if (!rows || !cols) return;
+
+  const boardWidth = cols * CELL_SIZE;
+  const boardHeight = rows * CELL_SIZE;
+  boardZoomEl.style.width = `${boardWidth * boardZoom}px`;
+  boardZoomEl.style.height = `${boardHeight * boardZoom}px`;
+  boardZoomEl.style.setProperty("--board-scale", String(boardZoom));
+}
+
+function snapBoardScrollToVisibleEdges() {
+  if (!boardShellEl || !rows || !cols) return;
+  const viewport = getBoardViewportSize();
+  const scaledWidth = cols * CELL_SIZE * boardZoom;
+  const scaledHeight = rows * CELL_SIZE * boardZoom;
+  if (scaledWidth <= viewport.width + 0.5) {
+    boardShellEl.scrollLeft = 0;
+  }
+  if (scaledHeight <= viewport.height + 0.5) {
+    boardShellEl.scrollTop = 0;
+  }
+}
+
+function scheduleBoardLayout() {
+  if (boardLayoutRafId) return;
+  boardLayoutRafId = requestAnimationFrame(() => {
+    boardLayoutRafId = 0;
+    applyBoardLayout();
+  });
+}
+
+function centerBoardViewport() {
+  if (!boardShellEl) return;
+  const maxLeft = Math.max(0, boardShellEl.scrollWidth - boardShellEl.clientWidth);
+  const maxTop = Math.max(0, boardShellEl.scrollHeight - boardShellEl.clientHeight);
+  boardShellEl.scrollLeft = maxLeft / 2;
+  boardShellEl.scrollTop = maxTop / 2;
+}
+
+function setBoardZoom(nextZoom, options = {}) {
+  const fullFitFloor = getFullBoardZoomFloor();
+  const minZoom = Number.isFinite(options.minZoom)
+    ? Number(options.minZoom)
+    : Math.min(MIN_BOARD_ZOOM, fullFitFloor, boardZoom);
+  if (!boardShellEl) {
+    boardZoom = clamp(Number(nextZoom), minZoom, MAX_BOARD_ZOOM);
+    updateZoomReadout();
+    syncMinZoomLayoutState();
+    if (options.persist !== false) saveSettings();
+    return;
+  }
+
+  const targetZoom = clamp(Number(nextZoom), minZoom, MAX_BOARD_ZOOM);
+  const prevZoom = boardZoom;
+  const zoomChanged = Math.abs(targetZoom - prevZoom) > 0.0001;
+
+  const shellRect = boardShellEl.getBoundingClientRect();
+  const fallbackOffsetX = boardShellEl.clientWidth / 2;
+  const fallbackOffsetY = boardShellEl.clientHeight / 2;
+  const anchorOffsetX = clamp(
+    Number.isFinite(options.anchorClientX)
+      ? options.anchorClientX - shellRect.left
+      : fallbackOffsetX,
+    0,
+    boardShellEl.clientWidth,
+  );
+  const anchorOffsetY = clamp(
+    Number.isFinite(options.anchorClientY)
+      ? options.anchorClientY - shellRect.top
+      : fallbackOffsetY,
+    0,
+    boardShellEl.clientHeight,
+  );
+  const anchorContentX = (boardShellEl.scrollLeft + anchorOffsetX) / prevZoom;
+  const anchorContentY = (boardShellEl.scrollTop + anchorOffsetY) / prevZoom;
+
+  boardZoom = targetZoom;
+  updateZoomReadout();
+  syncMinZoomLayoutState();
+  applyBoardLayout();
+
+  const targetLeft = anchorContentX * targetZoom - anchorOffsetX;
+  const targetTop = anchorContentY * targetZoom - anchorOffsetY;
+  const maxLeft = Math.max(0, boardShellEl.scrollWidth - boardShellEl.clientWidth);
+  const maxTop = Math.max(0, boardShellEl.scrollHeight - boardShellEl.clientHeight);
+  boardShellEl.scrollLeft = clamp(targetLeft, 0, maxLeft);
+  boardShellEl.scrollTop = clamp(targetTop, 0, maxTop);
+  snapBoardScrollToVisibleEdges();
+
+  if (zoomChanged && options.persist !== false) {
+    saveSettings();
+  }
+}
+
+function getTouchDistance(firstTouch, secondTouch) {
+  const dx = secondTouch.clientX - firstTouch.clientX;
+  const dy = secondTouch.clientY - firstTouch.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function getTouchMidpoint(firstTouch, secondTouch) {
+  return {
+    x: (firstTouch.clientX + secondTouch.clientX) / 2,
+    y: (firstTouch.clientY + secondTouch.clientY) / 2,
+  };
+}
+
+function beginPinchZoom(event) {
+  if (event.touches.length !== 2) return;
+  const [firstTouch, secondTouch] = event.touches;
+  const startDistance = getTouchDistance(firstTouch, secondTouch);
+  if (!Number.isFinite(startDistance) || startDistance <= 0) return;
+
+  const midpoint = getTouchMidpoint(firstTouch, secondTouch);
+  const pressedKey = boardInput.getPressedKey();
+  if (pressedKey) {
+    boardInput.suppressBothFor(pressedKey, 450);
+  }
+  clearPendingTouchTapGuess();
+  clearChordPreview();
+  cancelLongPress();
+  suppressTapAfterPinch();
+
+  isPinchZooming = true;
+  pinchState = {
+    startDistance,
+    startZoom: boardZoom,
+    anchorClientX: midpoint.x,
+    anchorClientY: midpoint.y,
+  };
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+}
+
+function updatePinchZoom(event) {
+  if (!isPinchZooming || !pinchState) return;
+  if (event.touches.length !== 2) return;
+  const [firstTouch, secondTouch] = event.touches;
+  const distance = getTouchDistance(firstTouch, secondTouch);
+  if (!Number.isFinite(distance) || distance <= 0) return;
+
+  const midpoint = getTouchMidpoint(firstTouch, secondTouch);
+  const ratio = distance / pinchState.startDistance;
+  if (event.cancelable) {
+    event.preventDefault();
+  }
+  suppressTapAfterPinch();
+  const fullFloor = getFullBoardZoomFloor();
+  setBoardZoom(pinchState.startZoom * ratio, {
+    anchorClientX: midpoint.x,
+    anchorClientY: midpoint.y,
+    minZoom: fullFloor,
+    persist: false,
+  });
+}
+
+function endPinchZoom() {
+  if (!isPinchZooming) return;
+  isPinchZooming = false;
+  pinchState = null;
+  suppressTapAfterPinch();
+  saveSettings();
 }
 
 function readCustomBoardConfig() {
@@ -180,6 +481,7 @@ function saveSettings() {
       ...currentSettings,
       difficulty: difficultyEl?.value ?? "medium",
       theme: themeEl?.value ?? "dark",
+      boardZoom: Number(boardZoom.toFixed(3)),
     }),
   );
 }
@@ -243,7 +545,7 @@ function lockBoardForDailyLimit(status = getDailyLimitStatus()) {
     btn.disabled = true;
     btn.setAttribute("aria-disabled", "true");
   }
-  requestAnimationFrame(updateBoardMobileScale);
+  scheduleBoardLayout();
 }
 
 function shouldBlockNewDailyGame() {
@@ -281,6 +583,9 @@ function applyThemeSelection() {
 function loadSettings() {
   const raw = getCookie(COOKIE_SETTINGS);
   if (!raw) {
+    boardZoom = DEFAULT_BOARD_ZOOM;
+    updateZoomReadout();
+    syncMinZoomLayoutState();
     syncCustomDifficultyAvailability();
     return;
   }
@@ -299,9 +604,13 @@ function loadSettings() {
       syncThemeButtons();
       applyThemeSelection();
     }
+    boardZoom = clampBoardZoom(parsed?.boardZoom);
   } catch {
     // Ignore invalid cookie payload.
+    boardZoom = DEFAULT_BOARD_ZOOM;
   } finally {
+    updateZoomReadout();
+    syncMinZoomLayoutState();
     syncCustomDifficultyAvailability();
   }
 }
@@ -452,13 +761,11 @@ function setPendingTouchTapGuess(key) {
 
 function consumePendingTouchTapGuess(key) {
   if (!pendingTouchTapGuessExpiresAt || performance.now() > pendingTouchTapGuessExpiresAt) {
-    pendingTouchTapGuessKey = "";
-    pendingTouchTapGuessExpiresAt = 0;
+    clearPendingTouchTapGuess();
     return false;
   }
   if (pendingTouchTapGuessKey !== key) return false;
-  pendingTouchTapGuessKey = "";
-  pendingTouchTapGuessExpiresAt = 0;
+  clearPendingTouchTapGuess();
   return true;
 }
 
@@ -497,6 +804,9 @@ function onCellPointerDown(event, r, c) {
     return;
   }
   if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+  if ((event.pointerType === "touch" || event.pointerType === "pen") && isTapSuppressedAfterPinch()) {
     return;
   }
   if (!event.isPrimary) return;
@@ -571,36 +881,6 @@ function onCellPointerUpOrCancel(event, r, c) {
   }
 }
 
-function updateBoardMobileScale() {
-  if (!boardEl || !boardZoomEl || !boardShellEl || !rows || !cols) return;
-
-  const boardWidth = cols * CELL_SIZE;
-  const boardHeight = rows * CELL_SIZE;
-  let scale = 1;
-
-  const isMobileLayout = window.innerWidth <= 900;
-  if (isMobileLayout) {
-    const bodyStyles = getComputedStyle(document.body);
-    const bodyPadX =
-      parseFloat(bodyStyles.paddingLeft || "0") + parseFloat(bodyStyles.paddingRight || "0");
-    const shellStyles = getComputedStyle(boardShellEl);
-    const shellInsetX =
-      parseFloat(shellStyles.paddingLeft || "0") +
-      parseFloat(shellStyles.paddingRight || "0") +
-      parseFloat(shellStyles.borderLeftWidth || "0") +
-      parseFloat(shellStyles.borderRightWidth || "0");
-    const availableWidth = Math.max(120, window.innerWidth - bodyPadX - shellInsetX);
-    // On tall custom boards, fitting by viewport height makes cells microscopic.
-    // Fit width on mobile and let the shell scroll vertically.
-    scale = Math.min(1, availableWidth / boardWidth);
-  }
-
-  boardZoomEl.style.width = `${Math.ceil(boardWidth * scale)}px`;
-  boardZoomEl.style.height = `${Math.ceil(boardHeight * scale)}px`;
-  boardZoomEl.style.setProperty("--board-scale", String(scale));
-  boardShellEl.classList.toggle("is-mobile-fitted", scale < 1);
-}
-
 function renderBoard() {
   boardEl.innerHTML = "";
   boardEl.style.gridTemplateColumns = `repeat(${cols}, ${CELL_SIZE}px)`;
@@ -617,6 +897,7 @@ function renderBoard() {
       cellBtn.dataset.col = String(c);
 
       cellBtn.addEventListener("click", () => {
+        if (isTapSuppressedAfterPinch()) return;
         if (consumeSuppressedClick(r, c)) return;
         onLeftClick(r, c);
       });
@@ -664,7 +945,7 @@ function renderBoard() {
     }
   }
   boardEl.appendChild(fragment);
-  requestAnimationFrame(updateBoardMobileScale);
+  applyBoardLayout();
 }
 
 function revealCell(r, c) {
@@ -1004,6 +1285,7 @@ function restoreGameState() {
 
   createGrid();
   renderBoard();
+  centerBoardViewport();
 
   openedCells = 0;
   flagCount = 0;
@@ -1133,6 +1415,7 @@ function newGame() {
   updateReplayButton();
   createGrid();
   renderBoard();
+  centerBoardViewport();
   updateCounters();
   saveGameState();
 }
@@ -1140,10 +1423,27 @@ function newGame() {
 window.addEventListener("mouseup", clearChordPreview);
 document.addEventListener("visibilitychange", syncTimerWithPageVisibility);
 boardShellEl?.addEventListener("scroll", cancelLongPress, { passive: true });
+boardShellEl?.addEventListener("touchstart", beginPinchZoom, { passive: false });
+boardShellEl?.addEventListener("touchmove", updatePinchZoom, { passive: false });
+boardShellEl?.addEventListener("touchend", (event) => {
+  if ((event.touches?.length ?? 0) < 2) {
+    endPinchZoom();
+  }
+}, { passive: true });
+boardShellEl?.addEventListener("touchcancel", () => {
+  endPinchZoom();
+}, { passive: true });
 boardShellEl?.addEventListener("wheel", (event) => {
-  if (window.innerWidth <= 900) return;
   if (!boardShellEl) return;
-  if (event.ctrlKey) return;
+  if (event.ctrlKey) {
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+    const zoomStep = event.deltaY < 0 ? BOARD_ZOOM_STEP : -BOARD_ZOOM_STEP;
+    setBoardZoom(boardZoom + zoomStep, { anchorClientX: event.clientX, anchorClientY: event.clientY });
+    return;
+  }
+  if (window.innerWidth <= 900) return;
 
   const maxHorizontalScroll = boardShellEl.scrollWidth - boardShellEl.clientWidth;
   const maxVerticalScroll = boardShellEl.scrollHeight - boardShellEl.clientHeight;
@@ -1171,16 +1471,18 @@ boardShellEl?.addEventListener("wheel", (event) => {
   }
 }, { passive: false });
 window.addEventListener("resize", () => {
-  requestAnimationFrame(updateBoardMobileScale);
+  scheduleBoardLayout();
 });
 window.addEventListener("orientationchange", () => {
-  requestAnimationFrame(updateBoardMobileScale);
+  scheduleBoardLayout();
 });
 window.addEventListener("scroll", () => {
   if (window.innerWidth <= 900) {
-    requestAnimationFrame(updateBoardMobileScale);
+    scheduleBoardLayout();
   }
 }, { passive: true });
+window.visualViewport?.addEventListener("resize", scheduleBoardLayout, { passive: true });
+window.visualViewport?.addEventListener("scroll", scheduleBoardLayout, { passive: true });
 newGameEl.addEventListener("click", newGame);
 replayEl.addEventListener("click", undoLoss);
 for (const btn of difficultyButtons) {
@@ -1224,6 +1526,5 @@ if (shouldBlockNewDailyGame()) {
   updateCounters();
 } else if (!restoreGameState()) {
   newGame();
-} else {
-  requestAnimationFrame(updateBoardMobileScale);
 }
+scheduleBoardLayout();
