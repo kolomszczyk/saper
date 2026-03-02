@@ -241,10 +241,12 @@ body {
 }
 
 .board-shell {
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   min-width: 0;
   flex: 0 1 auto;
+  margin-left: auto;
+  margin-right: auto;
   min-height: 0;
   background: var(--mid);
   border-top: 3px solid var(--dark);
@@ -259,6 +261,11 @@ body {
   overscroll-behavior-y: auto;
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
+}
+
+.board-shell:not(.is-min-zoom) {
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .board-zoom {
